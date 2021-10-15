@@ -2,8 +2,6 @@ package com.anorlddroid.mi_todo.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.MaterialTheme.typography
-import androidx.compose.material.Typography
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
@@ -15,9 +13,10 @@ private val DarkColorPalette = darkColors(
     secondary = primaryTextColor,
     background = Color.Black.copy(alpha = 0.85F),
     surface = primaryColor,
-    onPrimary = primaryLightColor
+    onPrimary = primaryLightColor,
+    onSecondary = primaryColor
 
-    )
+)
 private val LightColorPalette = lightColors(
     primary = brand,
     primaryVariant = primaryColor,
@@ -25,11 +24,11 @@ private val LightColorPalette = lightColors(
     background = Color.White.copy(alpha = 0.85F),
     surface = primaryTextColor.copy(alpha = 0.75F),
     onPrimary = primaryTextColor,
-    onSecondary = Color.Black,
+    onSecondary = lightTextFieldColor,
     onBackground = Color.Black,
     onSurface = Color.Black,
 
-)
+    )
 
 @Composable
 fun MiTodoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable() () -> Unit) {
@@ -38,8 +37,6 @@ fun MiTodoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable
     } else {
         LightColorPalette
     }
-
-
     MaterialTheme(
         colors = colors,
         typography = Typography,

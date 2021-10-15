@@ -3,12 +3,10 @@ package com.anorlddroid.mi_todo.ui
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -16,21 +14,17 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.anorlddroid.mi_todo.R
 import com.anorlddroid.mi_todo.data.ToDos
@@ -289,6 +283,7 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                 .swipeToDelete(offsetX, maximumWidth = maxWidth.value) {
                     onDeleted()
                 },
+
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colors.surface,
             elevation = 2.dp
@@ -299,6 +294,7 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                     .fillMaxSize(),
             ) {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colors.onPrimary
@@ -309,8 +305,7 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                     Checkbox(
                         checked = checked.value,
                         onCheckedChange = {
-                            checked.value =
-                                it // Todo implement LineThrough to mark as completed
+                            checked.value = it // Todo implement LineThrough to mark as completed
                         },
                         colors = CheckboxDefaults.colors(
                             Color(0xFF0E3057)
@@ -330,7 +325,7 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                             color = MaterialTheme.colors.onPrimary
                         )
                         .fillMaxWidth()
-                        .padding(start = 30.dp, bottom = 6.dp)
+                        .padding(start = 50.dp, bottom = 6.dp)
                 ) {
                     Text(
                         text = "21 March 2021, ",//TODO store in db

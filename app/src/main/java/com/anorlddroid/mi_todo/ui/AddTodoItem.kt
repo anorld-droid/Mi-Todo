@@ -1,25 +1,26 @@
 package com.anorlddroid.mi_todo.ui
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.HistoryToggleOff
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,8 +30,18 @@ import com.anorlddroid.mi_todo.ui.components.MiTodoScaffold
 import com.anorlddroid.mi_todo.ui.theme.AlphaNearOpaque
 import com.anorlddroid.mi_todo.ui.theme.NotoSerifDisplay
 import com.google.accompanist.insets.statusBarsPadding
+import com.vanpra.composematerialdialogs.MaterialDialog
+import com.vanpra.composematerialdialogs.datetime.date.DatePickerDefaults
+import com.vanpra.composematerialdialogs.datetime.date.datepicker
+import com.vanpra.composematerialdialogs.datetime.time.TimePickerDefaults
+import com.vanpra.composematerialdialogs.datetime.time.timepicker
+import com.vanpra.composematerialdialogs.rememberMaterialDialogState
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
     MiTodoScaffold(
@@ -113,10 +124,14 @@ fun Up(upPress: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddTodoItemContent() {
+    val dateDialog = rememberMaterialDialogState()
+    var timeDialog = rememberMaterialDialogState()
     var todo by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("Date") }
+    val selectedDate = remember { mutableStateOf(LocalDate.now()) }
+    val selectedTime = remember { mutableStateOf(LocalTime.now()) }
     var time by remember { mutableStateOf("") }
     Column(
         modifier = Modifier
@@ -141,15 +156,15 @@ fun AddTodoItemContent() {
             },
             maxLines = 2,
             modifier = Modifier
-                .padding(top = 8.dp, end = 6.dp, bottom = 20.dp)
+                .padding(top = 8.dp, end = 8.dp, bottom = 20.dp)
                 .fillMaxWidth(),
             textStyle = MaterialTheme.typography.h6,
             colors = TextFieldDefaults.textFieldColors(
-                backgroundColor = MaterialTheme.colors.background,
+//                backgroundColor = MaterialTheme.colors.onSecondary,
                 cursorColor = MaterialTheme.colors.primary,
                 disabledLabelColor = MaterialTheme.colors.background,
-                focusedIndicatorColor = MaterialTheme.colors.primary,
-                unfocusedIndicatorColor = MaterialTheme.colors.primary.copy(alpha = 0.55F),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
                 trailingIconColor = MaterialTheme.colors.primary
             ),
             trailingIcon = {
@@ -164,10 +179,10 @@ fun AddTodoItemContent() {
                     )
                 }
             },
-            shape = RoundedCornerShape(0.dp),
+            shape = RoundedCornerShape(16.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
-        Spacer(modifier = Modifier.height(50.dp))
+        Spacer(modifier = Modifier.height(40.dp))
         Text(
             text = "Date",
             style = TextStyle(
@@ -178,89 +193,123 @@ fun AddTodoItemContent() {
             ),
             color = MaterialTheme.colors.secondary
         )
-        Row(
+        TextField(
+            value = selectedDate.value.format(DateTimeFormatter.ofPattern("EEEE, dd  MMMM yyyy")),
+            onValueChange = {
+                dateDialog.show()
+            },
+            maxLines = 2,
             modifier = Modifier
-                .padding(top = 4.dp, end = 6.dp)
+                .padding(top = 20.dp, end = 8.dp, bottom = 20.dp)
                 .fillMaxWidth(),
-        ) {
-            BasicTextField(
-                enabled = false,
-                value = date,
-                onValueChange = {
-                    date = it
-                },
-                maxLines = 2,
-                modifier = Modifier
-                    .padding(top = 8.dp),
-                textStyle = MaterialTheme.typography.h6,
-                decorationBox ={ innerTextField ->
-
-                },
-//                colors = TextFieldDefaults.textFieldColors(
-//                    backgroundColor = MaterialTheme.colors.background,
-//                    disabledTextColor = MaterialTheme.colors.secondary,
-//                    cursorColor = MaterialTheme.colors.primary,
-//                    disabledLabelColor = MaterialTheme.colors.background,
-//                    disabledIndicatorColor = MaterialTheme.colors.primary,
-//                    unfocusedIndicatorColor = MaterialTheme.colors.primary.copy(alpha = 0.55F),
-//                    trailingIconColor = MaterialTheme.colors.primary
-//                ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-            )
-            Icon(
-                imageVector = Icons.Filled.DateRange,
-                tint = MaterialTheme.colors.primary,
-                contentDescription = "Calender picker",
-                modifier = Modifier.clickable {
-                    date = "You clicked me ):"
-                }
-            )
-            Icon(
-                imageVector = Icons.Filled.Cancel,
-                tint = MaterialTheme.colors.primary,
-                contentDescription = "Up button",
-                modifier = Modifier.clickable {
-                    date = ""
-
-                }
-            )
-        }
-        BoxWithConstraints {
-            val maxwidth = maxWidth
-            Row(
-                modifier = Modifier
-                    .padding(top = 18.dp, end = 6.dp, bottom = 40.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = time,
-                    textAlign = TextAlign.Start,
-                    modifier = Modifier
-                        .padding(end = 10.dp)
-                        .width(maxwidth - 30.dp),
-                    style = MaterialTheme.typography.h6,
-                    textDecoration = TextDecoration.Underline
-                )
+            textStyle = MaterialTheme.typography.h6,
+            colors = TextFieldDefaults.textFieldColors(
+//                backgroundColor = MaterialTheme.colors.onSecondary,
+                cursorColor = MaterialTheme.colors.primary,
+                disabledLabelColor = MaterialTheme.colors.background,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                trailingIconColor = MaterialTheme.colors.primary
+            ),
+            trailingIcon = {
                 Icon(
-                    imageVector = Icons.Filled.HistoryToggleOff,
+                    imageVector = Icons.Filled.DateRange,
                     tint = MaterialTheme.colors.primary,
                     contentDescription = "Calender picker",
                     modifier = Modifier
-                        .padding(end = 6.dp)
+                        .padding(start = 4.dp, end = 8.dp)
                         .clickable {
-                            time = "You clicked me ):"
+                            dateDialog.show()
                         }
                 )
+            },
+            shape = RoundedCornerShape(16.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+        )
+        MaterialDialog(
+            dialogState = dateDialog,
+            backgroundColor = MaterialTheme.colors.background,
+            shape = MaterialTheme.shapes.medium,
+            buttons = {
+//                Row(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .background(
+//                            color = MaterialTheme.colors.background,
+//                            shape = MaterialTheme.shapes.medium
+//                        )){
+                positiveButton("Ok")
+                negativeButton("Cancel")
+//                }
+            }
+        ) {
+            datepicker(
+                initialDate = selectedDate.value,
+                colors = DatePickerDefaults.colors(
+                    headerBackgroundColor = MaterialTheme.colors.primary
+                ),
+            ) { date ->
+                selectedDate.value = date
+            }
+        }
+        TextField(
+            value = selectedTime.value.format(DateTimeFormatter.ofPattern("hh:mm a")),
+            onValueChange = {
+                timeDialog.show()
+            },
+            maxLines = 2,
+            modifier = Modifier
+                .padding(top = 5.dp, end = 8.dp, bottom = 20.dp)
+                .fillMaxWidth(),
+            textStyle = MaterialTheme.typography.h6,
+            colors = TextFieldDefaults.textFieldColors(
+                cursorColor = MaterialTheme.colors.primary,
+                disabledLabelColor = MaterialTheme.colors.background,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                trailingIconColor = MaterialTheme.colors.primary
+            ),
+            trailingIcon = {
                 Icon(
-                    imageVector = Icons.Filled.Cancel,
+                    imageVector = Icons.Filled.HistoryToggleOff,
                     tint = MaterialTheme.colors.primary,
-                    contentDescription = "Clear Text",
-                    modifier = Modifier.clickable {
-                        time = ""
-                    }
+                    contentDescription = "Time picker",
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .clickable {
+                            timeDialog.show()
+                        }
                 )
+            },
+            shape = RoundedCornerShape(16.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+        )
+        MaterialDialog(
+            dialogState = timeDialog,
+            backgroundColor = MaterialTheme.colors.background,
+            shape = MaterialTheme.shapes.medium,
+            buttons = {
+//                Row(
+//                    modifier = Modifier
+//                        .background(
+//                            color = MaterialTheme.colors.background,
+//                            shape = MaterialTheme.shapes.medium
+//                        )){
+                positiveButton("Ok")
+                negativeButton("Cancel")
+//                }
+            }
+        ) {
+            timepicker(
+                initialTime = selectedTime.value,
+                colors = TimePickerDefaults.colors(
+
+                )
+            ) { time ->
+                selectedTime.value = time
             }
         }
     }
 }
+
+

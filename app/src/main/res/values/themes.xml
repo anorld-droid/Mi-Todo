@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <!-- Base application theme. -->
     <style name="Theme.MiTodo" parent="Theme.Material.DayNight.NoActionBar">
         <item name="android:colorPrimary">#ff00ff</item>
@@ -6,6 +6,7 @@
         <item name="android:statusBarColor">#FF0E3057</item>
         <item name="android:navigationBarColor">#FF0E3057</item>
     </style>
+
 
     <style name="Theme.Material.DayNight.NoActionBar" parent="@android:style/Theme.Material.Light.NoActionBar" />
 
