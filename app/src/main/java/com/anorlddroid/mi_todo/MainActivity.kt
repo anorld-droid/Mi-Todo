@@ -1,20 +1,19 @@
 package com.anorlddroid.mi_todo
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.annotation.RequiresApi
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.core.view.WindowCompat
-import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
 
 class MainActivity : ComponentActivity() {
+    @ExperimentalMaterialApi
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-         WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             MiTodoApp()
         }

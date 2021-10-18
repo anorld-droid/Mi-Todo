@@ -1,7 +1,6 @@
 package com.anorlddroid.mi_todo.data
 
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.mutableStateOf
 
 @Stable
 class ToDos(
@@ -10,15 +9,15 @@ class ToDos(
 )
 
 val TodosList = arrayOf(
+    ToDos("Clean the house the first thing in the morning before even taking tea ", "07:30am"),
     ToDos("Clean the house", "07:30am"),
     ToDos("Clean the house", "07:30am"),
+    ToDos("Clean the house the first thing in the morning before even taking tea", "07:30am"),
     ToDos("Clean the house", "07:30am"),
     ToDos("Clean the house", "07:30am"),
+    ToDos("Clean the house the first thing in the morning before even taking tea", "07:30am"),
     ToDos("Clean the house", "07:30am"),
-    ToDos("Clean the house", "07:30am"),
-    ToDos("Clean the house", "07:30am"),
-    ToDos("Clean the house", "07:30am"),
-    ToDos("Clean the house", "07:30am"),
+    ToDos("Clean the house the first thing in the morning before even taking tea", "07:30am"),
 
-)
+    )
 fun getTodos() = TodosList

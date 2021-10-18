@@ -25,7 +25,8 @@ fun Modifier.swipeToDelete(
     onDeleted: () -> Unit
 ): Modifier = composed {
     pointerInput(Unit) {
-        // Used to calculate a settling position of a fling animation.
+
+    // Used to calculate a settling position of a fling animation.
         val decay = splineBasedDecay<Float>(this)
         // Wrap in a coroutine scope to use suspend functions for touch events and animation.
         coroutineScope {

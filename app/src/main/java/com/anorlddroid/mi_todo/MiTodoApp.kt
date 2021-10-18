@@ -1,5 +1,8 @@
 package com.anorlddroid.mi_todo
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -8,6 +11,8 @@ import com.anorlddroid.mi_todo.ui.components.MiTodoScaffold
 import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
 import com.google.accompanist.insets.ProvideWindowInsets
 
+@RequiresApi(Build.VERSION_CODES.O)
+@ExperimentalMaterialApi
 @Composable
 fun MiTodoApp(){
     ProvideWindowInsets {

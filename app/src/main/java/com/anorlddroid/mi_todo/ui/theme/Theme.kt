@@ -5,6 +5,9 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorPalette = darkColors(
@@ -30,12 +33,22 @@ private val LightColorPalette = lightColors(
 
     )
 
+object ThemeState {
+    var selectedTheme by mutableStateOf("Auto")
+}
+
 @Composable
 fun MiTodoTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable() () -> Unit) {
-    val colors = if (darkTheme) {
+    val colors = if (ThemeState.selectedTheme == "darkTheme") {
         DarkColorPalette
-    } else {
+    } else if (ThemeState.selectedTheme == "lightTheme") {
         LightColorPalette
+    } else {
+        if (isSystemInDarkTheme()) {
+            DarkColorPalette
+        } else {
+            LightColorPalette
+        }
     }
     MaterialTheme(
         colors = colors,

@@ -1,7 +1,9 @@
 package com.anorlddroid.mi_todo.ui
 
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,18 +11,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.HistoryToggleOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +30,8 @@ import com.anorlddroid.mi_todo.ui.components.MiTodoDivider
 import com.anorlddroid.mi_todo.ui.components.MiTodoScaffold
 import com.anorlddroid.mi_todo.ui.theme.AlphaNearOpaque
 import com.anorlddroid.mi_todo.ui.theme.NotoSerifDisplay
+import com.anorlddroid.mi_todo.ui.theme.brand
+import com.anorlddroid.mi_todo.ui.theme.primaryLightColor
 import com.google.accompanist.insets.statusBarsPadding
 import com.vanpra.composematerialdialogs.MaterialDialog
 import com.vanpra.composematerialdialogs.datetime.date.DatePickerDefaults
@@ -54,6 +57,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
             ) {
                 item {
                     AddTodoItemContent()
+                    Spacer(modifier = Modifier.width(40.dp))
                 }
             }
         },
@@ -63,6 +67,9 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                     navController.navigate("ui/Home") {
                         launchSingleTop = true
                         restoreState = true
+                        popUpTo("ui/AddTodoItem") {
+                            inclusive = true
+                        }
                     }
                 },
                 backgroundColor = MaterialTheme.colors.primary,
@@ -127,12 +134,33 @@ fun Up(upPress: () -> Unit) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddTodoItemContent() {
+    //time and date variable states
     val dateDialog = rememberMaterialDialogState()
-    var timeDialog = rememberMaterialDialogState()
-    var todo by remember { mutableStateOf("") }
+    val timeDialog = rememberMaterialDialogState()
     val selectedDate = remember { mutableStateOf(LocalDate.now()) }
     val selectedTime = remember { mutableStateOf(LocalTime.now()) }
-    var time by remember { mutableStateOf("") }
+
+    var todo by remember { mutableStateOf("") }// todo string
+
+    val context = LocalContext.current
+    //Category
+    var category by remember { mutableStateOf("Work") }
+    var showCategory by remember { mutableStateOf(false) }
+    val categories = mutableListOf("Work", "School", "Home", "Parties")
+
+    //remainder
+    var remainder by remember { mutableStateOf("Daily") }
+    var showRemainders by remember { mutableStateOf(false) }
+    val remainders = mutableListOf("Daily", "Weekly", "Monthly", "Yearly")
+
+
+    //checkbox
+    val hideTodo = remember { mutableStateOf(false) }
+    val deleteTodoWhenDone = remember { mutableStateOf(false) }
+
+    val maxLength by remember {
+        mutableStateOf(70)
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -152,15 +180,14 @@ fun AddTodoItemContent() {
         TextField(
             value = todo,
             onValueChange = {
-                todo = it
+                if (it.length <= maxLength) todo = it
             },
             maxLines = 2,
             modifier = Modifier
-                .padding(top = 8.dp, end = 8.dp, bottom = 20.dp)
+                .padding(top = 8.dp, bottom = 2.dp)
                 .fillMaxWidth(),
             textStyle = MaterialTheme.typography.h6,
             colors = TextFieldDefaults.textFieldColors(
-//                backgroundColor = MaterialTheme.colors.onSecondary,
                 cursorColor = MaterialTheme.colors.primary,
                 disabledLabelColor = MaterialTheme.colors.background,
                 focusedIndicatorColor = Color.Transparent,
@@ -182,6 +209,19 @@ fun AddTodoItemContent() {
             shape = RoundedCornerShape(16.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
+        if (todo.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .align(Alignment.End)
+            ) {
+                Text(
+                    text = "${todo.length}/$maxLength",
+                    style = MaterialTheme.typography.caption,
+                    textAlign = TextAlign.End
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(40.dp))
         Text(
             text = "Date",
@@ -200,11 +240,10 @@ fun AddTodoItemContent() {
             },
             maxLines = 2,
             modifier = Modifier
-                .padding(top = 20.dp, end = 8.dp, bottom = 20.dp)
+                .padding(top = 20.dp, bottom = 20.dp)
                 .fillMaxWidth(),
             textStyle = MaterialTheme.typography.h6,
             colors = TextFieldDefaults.textFieldColors(
-//                backgroundColor = MaterialTheme.colors.onSecondary,
                 cursorColor = MaterialTheme.colors.primary,
                 disabledLabelColor = MaterialTheme.colors.background,
                 focusedIndicatorColor = Color.Transparent,
@@ -228,25 +267,17 @@ fun AddTodoItemContent() {
         )
         MaterialDialog(
             dialogState = dateDialog,
-            backgroundColor = MaterialTheme.colors.background,
+            backgroundColor = primaryLightColor,
             shape = MaterialTheme.shapes.medium,
             buttons = {
-//                Row(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .background(
-//                            color = MaterialTheme.colors.background,
-//                            shape = MaterialTheme.shapes.medium
-//                        )){
                 positiveButton("Ok")
                 negativeButton("Cancel")
-//                }
             }
         ) {
             datepicker(
                 initialDate = selectedDate.value,
                 colors = DatePickerDefaults.colors(
-                    headerBackgroundColor = MaterialTheme.colors.primary
+                    headerBackgroundColor = brand
                 ),
             ) { date ->
                 selectedDate.value = date
@@ -259,7 +290,7 @@ fun AddTodoItemContent() {
             },
             maxLines = 2,
             modifier = Modifier
-                .padding(top = 5.dp, end = 8.dp, bottom = 20.dp)
+                .padding(top = 5.dp, bottom = 20.dp)
                 .fillMaxWidth(),
             textStyle = MaterialTheme.typography.h6,
             colors = TextFieldDefaults.textFieldColors(
@@ -286,28 +317,226 @@ fun AddTodoItemContent() {
         )
         MaterialDialog(
             dialogState = timeDialog,
-            backgroundColor = MaterialTheme.colors.background,
+            backgroundColor = primaryLightColor,
             shape = MaterialTheme.shapes.medium,
             buttons = {
-//                Row(
-//                    modifier = Modifier
-//                        .background(
-//                            color = MaterialTheme.colors.background,
-//                            shape = MaterialTheme.shapes.medium
-//                        )){
                 positiveButton("Ok")
                 negativeButton("Cancel")
-//                }
             }
         ) {
             timepicker(
                 initialTime = selectedTime.value,
                 colors = TimePickerDefaults.colors(
-
+                    activeBackgroundColor = brand
                 )
             ) { time ->
                 selectedTime.value = time
             }
+        }
+        Spacer(modifier = Modifier.height(15.dp))
+        BoxWithConstraints {
+            val maxWidth = maxWidth
+            Column {
+                Text(
+                    text = "Remainder",
+                    style = TextStyle(
+                        fontFamily = NotoSerifDisplay,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 22.sp
+                    ),
+                    color = MaterialTheme.colors.secondary
+                )
+                TextField(
+                    value = remainder,
+                    onValueChange = {
+                        showRemainders = true
+                    },
+                    maxLines = 2,
+                    modifier = Modifier
+                        .padding(top = 20.dp)
+                        .width(maxWidth),
+                    textStyle = MaterialTheme.typography.h6,
+                    colors = TextFieldDefaults.textFieldColors(
+                        cursorColor = MaterialTheme.colors.primary,
+                        disabledLabelColor = MaterialTheme.colors.background,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        trailingIconColor = MaterialTheme.colors.primary
+                    ),
+                    trailingIcon = {
+                        Icon(
+                            imageVector = if (showRemainders) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
+                            tint = MaterialTheme.colors.primary,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    showRemainders = true
+                                }
+                        )
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
+                MaterialTheme(
+                    shapes = MaterialTheme.shapes.copy(medium = RoundedCornerShape(16.dp))
+                ) {
+                    DropdownMenu(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colors.onPrimary
+                            )
+                            .width(maxWidth),
+                        expanded = showRemainders,
+                        onDismissRequest = { showRemainders = false },
+
+                        ) {
+                        remainders.forEach { listRemainder ->
+                            DropdownMenuItem(onClick = {
+                                showRemainders = false
+                                remainder = listRemainder
+                            }) {
+                                Text(
+                                    text = listRemainder,
+                                    style = MaterialTheme.typography.h6,
+                                    color = MaterialTheme.colors.secondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(25.dp))
+        BoxWithConstraints {
+            val maxWidth = maxWidth
+            Column {
+                Text(
+                    text = "Categories",
+                    style = TextStyle(
+                        fontFamily = NotoSerifDisplay,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 22.sp
+                    ),
+                    color = MaterialTheme.colors.secondary
+                )
+
+                TextField(
+                    value = category,
+                    onValueChange = {
+                        category = it
+                    },
+                    maxLines = 2,
+                    modifier = Modifier
+                        .padding(top = 20.dp)
+                        .width(maxWidth),
+                    textStyle = MaterialTheme.typography.h6,
+                    colors = TextFieldDefaults.textFieldColors(
+                        cursorColor = MaterialTheme.colors.primary,
+                        disabledLabelColor = MaterialTheme.colors.background,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        trailingIconColor = MaterialTheme.colors.primary
+                    ),
+                    trailingIcon = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.LibraryAdd,
+                                contentDescription = "Adding new Categories",
+                                tint = MaterialTheme.colors.primary,
+                                modifier = Modifier.clickable {
+                                    Toast.makeText(
+                                        context,
+                                        "Added to categories",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    categories.add(category)
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = if (showCategory) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
+                                tint = MaterialTheme.colors.primary,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .clickable {
+                                        showCategory = true
+                                    }
+                            )
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
+                MaterialTheme(
+                    shapes = MaterialTheme.shapes.copy(medium = RoundedCornerShape(16.dp))
+                ) {
+                    DropdownMenu(
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colors.onPrimary
+                            )
+                            .width(maxWidth - 0.dp)
+                            .height(120.dp),
+                        expanded = showCategory,
+                        onDismissRequest = { showCategory = false },
+
+                        ) {
+                        categories.forEach { listCategory ->
+                            DropdownMenuItem(onClick = {
+                                showCategory = false
+                                category = listCategory
+                            }) {
+                                Text(
+                                    text = listCategory,
+                                    style = MaterialTheme.typography.h6,
+                                    color = MaterialTheme.colors.secondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .background(
+                    color = MaterialTheme.colors.background
+                )
+                .fillMaxWidth()
+                .padding(top = 20.dp, end = 30.dp)
+        ) {
+            Checkbox(
+                checked = hideTodo.value,
+                onCheckedChange = {
+                    hideTodo.value = it
+                },
+                colors = CheckboxDefaults.colors(
+                    Color(0xFF0E3057)
+                )
+            )
+            Text(
+                text = "Hide",
+                style = MaterialTheme.typography.h6,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Checkbox(
+                checked = deleteTodoWhenDone.value,
+                onCheckedChange = {
+                    deleteTodoWhenDone.value = it
+                },
+                colors = CheckboxDefaults.colors(
+                    Color(0xFF0E3057)
+                )
+            )
+            Text(
+                text = "Delete when done",
+                style = MaterialTheme.typography.h6,
+            )
         }
     }
 }
