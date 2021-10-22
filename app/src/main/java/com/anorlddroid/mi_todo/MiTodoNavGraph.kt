@@ -29,7 +29,7 @@ fun MiTodoNavGraph(
             AddTodoItem (upPress = {navController.navigateUp()}, navController = navController)
         }
         composable("ui/Home") {
-            Home(navController = navController, coroutineScope)
+            Home(navController = navController, coroutineScope, scaffoldState)
         }
 
     }

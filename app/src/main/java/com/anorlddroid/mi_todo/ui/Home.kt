@@ -1,6 +1,7 @@
 package com.anorlddroid.mi_todo.ui
 
-import androidx.compose.animation.ExperimentalAnimationApi
+import android.util.Log
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -22,21 +23,23 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.anorlddroid.mi_todo.MiTodoViewModel
 import com.anorlddroid.mi_todo.R
-import com.anorlddroid.mi_todo.data.ToDos
-import com.anorlddroid.mi_todo.data.getCategoriesFilters
-import com.anorlddroid.mi_todo.data.getTodos
-import com.anorlddroid.mi_todo.data.getWeekdayFilters
+import com.anorlddroid.mi_todo.data.database.TodoMinimal
 import com.anorlddroid.mi_todo.ui.components.*
 import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
-import com.anorlddroid.mi_todo.ui.theme.ThemeState
+import com.anorlddroid.mi_todo.ui.theme.NotoSerifDisplay
 import com.google.accompanist.insets.statusBarsPadding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -46,8 +49,12 @@ import kotlin.math.sin
 
 @ExperimentalMaterialApi
 @Composable
-fun Home(navController: NavController, coroutineScope: CoroutineScope) {
-    val todos = remember { mutableStateListOf(*getTodos()) }
+fun Home(
+    navController: NavController,
+    coroutineScope: CoroutineScope,
+    scaffoldState: ScaffoldState
+) {
+    val viewModel: MiTodoViewModel = viewModel()
     val bottomSheetState =
         rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     ModalBottomSheetLayout(
@@ -74,7 +81,12 @@ fun Home(navController: NavController, coroutineScope: CoroutineScope) {
                     )
                 )
                 MiTodoDivider()
-                MiTodoRadioThemeGroup(radioOptions = listOf("On", "Off", "Auto"), "Auto")
+                MiTodoRadioThemeGroup(
+                    radioOptions = listOf("On", "Off", "Auto"),
+                    viewModel.themeState.collectAsState().value,
+                    viewModel = viewModel
+                )
+                Log.d("HOME", viewModel.themeState.collectAsState().value)
                 Text(
                     text = "Hide",
                     style = MaterialTheme.typography.h5,
@@ -86,7 +98,10 @@ fun Home(navController: NavController, coroutineScope: CoroutineScope) {
                     )
                 )
                 MiTodoDivider()
-                MiTodoRadioGroup(radioOptions = listOf("On", "Off"), "Off")
+                MiTodoRadioHideGroup(
+                    radioOptions = listOf("On", "Off"),
+                    viewModel.hideState.collectAsState().value
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "Follow us on twitter",
@@ -117,10 +132,13 @@ fun Home(navController: NavController, coroutineScope: CoroutineScope) {
                 HomeBar(modifier = Modifier, coroutineScope, bottomSheetState)
             },
             content = {
-                HomeContent(
-                    todoItems = todos,
-                    onDelete = { todos.remove(it) }
-                )
+                HomeContent(viewModel = viewModel, onDeleted = { todo, delete ->
+                    if (delete) {
+                        viewModel.deleteTodo(todo.name)
+                    }
+                }, scaffoldState = scaffoldState, coroutineScope = coroutineScope)
+
+
             },
             floatingActionButton = {
                 FloatingActionButton(
@@ -149,7 +167,6 @@ fun HomeBar(
     coroutineScope: CoroutineScope,
     bottomSheetState: ModalBottomSheetState
 ) {
-    var showMenu by remember { mutableStateOf(false) }
     Column(modifier = modifier.statusBarsPadding())
     {
         TopAppBar(
@@ -167,25 +184,6 @@ fun HomeBar(
                         contentDescription = "Bottom Sheet"
                     )
                 }
-//                DropdownMenu(
-//                    modifier = Modifier
-//                        .background(
-//                            color = MaterialTheme.colors.onPrimary
-//                        )
-//                        .padding(start = 2.dp),
-//                    expanded = showMenu,
-//                    onDismissRequest = { showMenu = false },
-//                ) {
-//                    DropdownMenuItem(onClick = { showMenu = false /*TODO*/ }) {
-//                        Text(
-//                            text = "Hide/Unhide",
-//                            style = MaterialTheme.typography.h6,
-//                            color = MaterialTheme.colors.secondary
-//                        )
-//                    }
-//
-//                }
-
             },
             title = {
                 Text(
@@ -208,58 +206,107 @@ fun HomeBar(
 
 @Composable
 fun HomeContent(
-    todoItems: MutableList<ToDos>,
-    onDelete: (todoItem: ToDos) -> Unit
+    onDeleted: (todo: TodoMinimal, delete: Boolean) -> Unit,
+    viewModel: MiTodoViewModel,
+    scaffoldState: ScaffoldState,
+    coroutineScope: CoroutineScope
 ) {
-
-    val weekdayFilter = getWeekdayFilters()
-    val categoryFilter = getCategoriesFilters()
+    val density = LocalDensity.current
+    val viewState by viewModel.state.collectAsState()
+    val selectedCategory = viewState.selectedCategory
     Column(
         modifier = Modifier
             .padding(2.dp)
             .fillMaxSize()
     )
     {
-        FilterBar(weekdayFilters = weekdayFilter, categoriesFilters = categoryFilter)
-        Spacer(modifier = Modifier.height(4.dp))
-        val lazyListState = rememberLazyListState()
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .padding(
-                    top = dimensionResource(id = R.dimen.list_top_padding)
-                )
-        ) {
-            item {
-
-            }
-            item {
-                weekdayFilter.forEach {
-                    Text(
-                        text = it.name,
-                        style = MaterialTheme.typography.h5,
-                        modifier = Modifier.padding(
-                            top = 2.dp,
-                            bottom = 22.dp,
-                            start = 4.dp,
-                            end = 3.dp
-                        )
+        if (viewState.categories.isNotEmpty()) {
+            FilterBar(
+                categoriesFilters = viewState.categories,
+                onFilterSelected = viewModel::onCategorySelected,
+                selectedFilter = selectedCategory
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            val lazyListState = rememberLazyListState()
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .padding(
+                        top = dimensionResource(id = R.dimen.list_top_padding)
                     )
-                    todoItems.forEachIndexed { index, todo ->
-                        key(todo) {
-                            TodoCard(todo = todo, onDeleted = { onDelete(todo) }, index = index)
+            ) {
+                item {
+                    viewState.todos.forEach { (title, todos) ->
+                        if (todos.isNotEmpty()) {
+                            Text(
+                                text = title,
+                                style = TextStyle(
+                                    fontFamily = NotoSerifDisplay,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    lineHeight = 24.sp
+                                ),
+                                modifier = Modifier.padding(
+                                    top = 2.dp,
+                                    bottom = 22.dp,
+                                    start = 12.dp,
+                                    end = 3.dp
+                                )
+                            )
+                            todos.forEachIndexed { _, todo ->
+                                key(todo) {
+                                    AnimatedVisibility(
+                                        visible = true,
+                                        enter = slideInVertically(
+                                            //slide in from 40dp from the top.
+                                            initialOffsetY = { with(density) { -40.dp.roundToPx() } }
+                                        ) + expandVertically(
+                                            //Expand from the top
+                                            expandFrom = Alignment.Top
+                                        ) + fadeIn(
+                                            //Fade in with the initial alpha of 0.3f
+                                            initialAlpha = 0.3f
+                                        ),
+                                        exit = slideOutVertically() + shrinkVertically() + fadeOut()
+                                    ) {
+                                        TodoCard(
+                                            todo = todo,
+                                            onDeleted = {
+                                                todo.hide = true
+                                                coroutineScope.launch {
+                                                    val snackbarResult =
+                                                        scaffoldState.snackbarHostState.showSnackbar(
+                                                            message = "${todo.name} deleted ",
+                                                            actionLabel = "Undo"
+                                                        )
+                                                    when (snackbarResult) {
+                                                        SnackbarResult.Dismissed -> onDeleted(
+                                                            todo,
+                                                            true
+                                                        )
+                                                        SnackbarResult.ActionPerformed -> todo.hide =
+                                                            false
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
 
+                                }
+                            }
                         }
                     }
                 }
             }
+        } else {
+
         }
     }
 }
 
 
 @Composable
-fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
+fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
     val particleRadiusDp = dimensionResource(id = R.dimen.particle_radius)
     val particleRadius: Float
     val itemHeightDp = dimensionResource(id = R.dimen.image_size)
@@ -291,7 +338,10 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
         explosionPercentage.value = (offsetX.value + funnelInitialTranslation) / screenWidth
     }
 
-    BoxWithConstraints {
+    BoxWithConstraints(
+        modifier = Modifier
+            .padding(start = 18.dp, end = 4.dp, bottom = 10.dp)
+    ) {
         Canvas(
             modifier = Modifier
                 .height(itemHeightDp)
@@ -355,7 +405,7 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
         MiTodoSurface(
             modifier = if (checked.value) {
                 Modifier
-                    .padding(start = 10.dp, end = 4.dp, bottom = 10.dp)
+                    .padding(start = 18.dp, end = 4.dp, bottom = 10.dp)
                     .swipeToDelete(offsetX, maximumWidth = maxWidth.value) {
                         onDeleted()
                     }
@@ -373,7 +423,6 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                     .fillMaxSize(),
             ) {
                 Row(
-//                    verticalAlignment = Alignment.C,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colors.onPrimary
@@ -384,7 +433,8 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                     Checkbox(
                         checked = checked.value,
                         onCheckedChange = {
-                            checked.value = it // Todo implement LineThrough to mark as completed
+                            checked.value =
+                                it
                         },
                         enabled = true,
                         colors = CheckboxDefaults.colors(
@@ -409,7 +459,7 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                             textDecoration = if (checked.value) TextDecoration.LineThrough else TextDecoration.None,
                         )
                         Text(
-                            text = "21 March 2021, ${todo.time}",//TODO store in db
+                            text = "${todo.date}, ${todo.time}",
                             style = MaterialTheme.typography.subtitle1,
                             modifier = Modifier
                                 .padding(start = 5.dp)
@@ -419,24 +469,10 @@ fun TodoCard(todo: ToDos, onDeleted: () -> Unit, index: Int) {
                 }
             }
         }
+
     }
 }
 
-@ExperimentalAnimationApi
-@Preview
-@Composable
-fun TodoCardPreview() {
-    MiTodoTheme(true) {
-        TodoCard(
-            ToDos(
-                "Cook Supper",
-                "21 March 2021, 08:34am"
-            ),
-            onDeleted = {},
-            index = 1
-        )
-    }
-}
 
 private fun Float.negateIfPositive(onPositive: () -> Unit): Float {
     return if (this > 0) {
@@ -446,7 +482,7 @@ private fun Float.negateIfPositive(onPositive: () -> Unit): Float {
 }
 
 @Composable
-fun MiTodoRadioGroup(radioOptions: List<String>, selected: String) {
+fun MiTodoRadioHideGroup(radioOptions: List<String>, selected: String) {
     val (selectedOption, onOptionSelected) = remember {
         mutableStateOf(selected)
     }
@@ -490,7 +526,11 @@ fun MiTodoRadioGroup(radioOptions: List<String>, selected: String) {
 }
 
 @Composable
-fun MiTodoRadioThemeGroup(radioOptions: List<String>, selected: String) {
+fun MiTodoRadioThemeGroup(
+    radioOptions: List<String>,
+    selected: String,
+    viewModel: MiTodoViewModel
+) {
     val (selectedOption, onOptionSelected) = remember {
         mutableStateOf(selected)
     }
@@ -532,9 +572,27 @@ fun MiTodoRadioThemeGroup(radioOptions: List<String>, selected: String) {
         }
     }
     when (selectedOption) {
-        "On" -> ThemeState.selectedTheme = "darkTheme"
-        "Off" -> ThemeState.selectedTheme = "lightTheme"
-        else -> ThemeState.selectedTheme = "Auto"
+        "On" -> viewModel.updateSetting("Theme", "On")
+        "Off" -> viewModel.updateSetting("Theme", "Off")
+        else -> viewModel.updateSetting("Theme", "Auto")
     }
 }
 
+@ExperimentalAnimationApi
+@Preview
+@Composable
+fun TodoCardPreview() {
+    MiTodoTheme {
+        TodoCard(
+            TodoMinimal(
+                "Cook Supper",
+                "21 March 2021, 08:34am",
+                "",
+                "",
+                hide = false,
+                delete = true
+            ),
+            onDeleted = {},
+        )
+    }
+}

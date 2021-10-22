@@ -1,4 +1,4 @@
-package com.anorlddroid.mi_todo.data
+package com.anorlddroid.mi_todo.data.repository
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf

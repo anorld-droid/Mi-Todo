@@ -47,7 +47,7 @@ fun drawFunnel(upperRadius: Float, lowerRadius: Float, width: Float): Path {
 @Preview
 @Composable
 fun FunnelPreview() {
-    MiTodoTheme(true) {
+    MiTodoTheme {
         Canvas(modifier = Modifier.size(200.dp)) {
             drawPath(
                 path = drawFunnel(size.height / 2, size.height / 10, size.width),

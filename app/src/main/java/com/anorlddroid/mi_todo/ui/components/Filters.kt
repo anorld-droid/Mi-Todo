@@ -4,48 +4,49 @@ package com.anorlddroid.mi_todo.ui.components
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Tab
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sort
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
-import com.anorlddroid.mi_todo.data.Filter
 import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
 
 @Composable
-fun FilterBar(weekdayFilters: List<Filter>, categoriesFilters: List<Filter>) {
-    var filterName by remember { mutableStateOf("Weekday") }
-    var showMenu by remember { mutableStateOf(false) }
-    LazyRow(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(start = 2.dp, end = 8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp),
-    ) {
-        item {
-            Box {
+fun FilterBar(
+    categoriesFilters: List<String>?,
+    onFilterSelected: ((String) -> Unit)?,
+    selectedFilter: String?
+) {
+    if (categoriesFilters?.isNotEmpty() == true) {
+        val filterName by remember { mutableStateOf("Categories") }
+        val selectedIndex = categoriesFilters.indexOfFirst { it == selectedFilter }
+        LazyRow(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(start = 2.dp, end = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp),
+        ) {
+            item {
                 Row(
                     modifier = Modifier
                         .padding(start = 2.dp, end = 6.dp)
-                        .clickable {
-                            showMenu = !showMenu
-                        }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Sort,
@@ -57,50 +58,21 @@ fun FilterBar(weekdayFilters: List<Filter>, categoriesFilters: List<Filter>) {
                         color = MaterialTheme.colors.secondary
                     )
                 }
-                MaterialTheme(
-                    shapes = MaterialTheme.shapes.copy(medium = RoundedCornerShape(16.dp))
-                ) {
-                    DropdownMenu(
-                        modifier = Modifier
-                            .background(
-                                color = MaterialTheme.colors.onPrimary
-                            )
-                            .width(200.dp)
-                            .padding(start = 2.dp),
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-
-                    ) {
-                        DropdownMenuItem(onClick = {
-                            showMenu = false
-                            filterName = "Categories"
-                        }) {
-                            Text(
-                                text = "Categories",
-                                style = MaterialTheme.typography.h6,
-                                color = MaterialTheme.colors.secondary
-                            )
-                        }
-                        DropdownMenuItem(onClick = {
-                            showMenu = false
-                            filterName = "Weekday"
-                        }) {
-                            Text(
-                                text = "Weekday",
-                                style = MaterialTheme.typography.h6,
-                                color = MaterialTheme.colors.secondary
-                            )
-                        }
-                    }
-                }
-            }
-            if (filterName == "Weekday") {
-                weekdayFilters.forEachIndexed { index, filter ->
-                    FilterChip(index, weekdayFilters, filter)
-                }
-            } else {
                 categoriesFilters.forEachIndexed { index, filter ->
-                    FilterChip(index, categoriesFilters, filter)
+                    Tab(
+                        selected = index == selectedIndex,
+                        onClick = {
+                            if (onFilterSelected != null) {
+                                onFilterSelected(filter)
+                            }
+                        }
+                    ) {
+                        FilterChip(
+                            filter = filter,
+                            selected = index == selectedIndex
+                        )
+                    }
+
                 }
             }
         }
@@ -110,14 +82,13 @@ fun FilterBar(weekdayFilters: List<Filter>, categoriesFilters: List<Filter>) {
 
 @Composable
 fun FilterChip(
-    index: Int,
-    filters: List<Filter>,
-    filter: Filter,
+    filter: String,
+    selected: Boolean,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.small
 ) {
 
-    val (selected, setSelected) = filter.enabled
+
     val backgroundColor by animateColorAsState(
         if (selected) MaterialTheme.colors.primary
         else MaterialTheme.colors.background
@@ -156,17 +127,11 @@ fun FilterChip(
             }
         Row(
             modifier = Modifier
-                .toggleable(
-                    value = selected,
-                    onValueChange = setSelected,
-                    interactionSource = interactionSource,
-                    indication = null
-                )
                 .then(backgroundPressed)
                 .then(border),
         ) {
             Text(
-                text = filter.name,
+                text = filter,
                 style = MaterialTheme.typography.caption,
                 maxLines = 1,
                 modifier = Modifier.padding(
@@ -186,9 +151,8 @@ fun FilterChip(
 private fun FilterDisabledPreview() {
     MiTodoTheme {
         FilterChip(
-            1,
-            listOf(Filter(name = "Demo", enabled = false)),
-            Filter(name = "Demo", enabled = false),
+            filter = "Demo",
+            true,
             Modifier.padding(4.dp)
         )
     }
@@ -201,9 +165,8 @@ private fun FilterDisabledPreview() {
 private fun FilterEnabledPreview() {
     MiTodoTheme {
         FilterChip(
-            1,
-            listOf(Filter(name = "Demo", enabled = true)),
-            Filter(name = "Demo", enabled = true)
+            filter = "Demo",
+            true
         )
     }
 }
