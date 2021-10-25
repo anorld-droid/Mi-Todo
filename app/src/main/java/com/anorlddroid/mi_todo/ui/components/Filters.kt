@@ -61,6 +61,10 @@ fun FilterBar(
                 categoriesFilters.forEachIndexed { index, filter ->
                     Tab(
                         selected = index == selectedIndex,
+                        modifier = Modifier.background(
+                            color = Color.Transparent,
+                            shape = MaterialTheme.shapes.small
+                        ),
                         onClick = {
                             if (onFilterSelected != null) {
                                 onFilterSelected(filter)

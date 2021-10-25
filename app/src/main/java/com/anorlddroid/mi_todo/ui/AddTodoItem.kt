@@ -1,5 +1,6 @@
 package com.anorlddroid.mi_todo.ui
 
+import android.content.Context
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -52,7 +53,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
     //viewModel
     val context = LocalContext.current
     val viewModel: MiTodoViewModel = viewModel()
-    val viewState by viewModel.state.collectAsState()
+//    val viewState by viewModel.state.collectAsState()
 
     //time and date variable states
     val dateDialog = rememberMaterialDialogState()
@@ -66,7 +67,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
     //Category
     var category by remember { mutableStateOf("Select category or add new ") }
     var showCategory by remember { mutableStateOf(false) }
-    val categories = viewState.categories
+    val categories by viewModel.categories.collectAsState()
 
     //repeat
     var repeat by remember { mutableStateOf("Daily") }
@@ -86,7 +87,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
             ) {
                 item {
                     val maxLength by remember {
-                        mutableStateOf(70)
+                        mutableStateOf(30)
                     }
                     Column(
                         modifier = Modifier
@@ -95,7 +96,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                     )
                     {
                         Text(
-                            text = "New task?",
+                            text = "New task",
                             style = TextStyle(
                                 fontFamily = NotoSerifDisplay,
                                 fontSize = 20.sp,
@@ -122,32 +123,26 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                                 trailingIconColor = MaterialTheme.colors.primary
                             ),
                             trailingIcon = {
-                                if (todo.isNotEmpty()) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Cancel,
-                                        tint = MaterialTheme.colors.primary,
-                                        contentDescription = "Clear Text",
-                                        modifier = Modifier.clickable {
-                                            todo = ""
-                                        }
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Filled.Cancel,
+                                    tint = MaterialTheme.colors.primary,
+                                    contentDescription = "Clear Text",
+                                    modifier = Modifier.clickable { todo = "" }
+                                )
                             },
                             shape = RoundedCornerShape(16.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
                         )
-                        if (todo.isNotEmpty()) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(end = 12.dp)
-                                    .align(Alignment.End)
-                            ) {
-                                Text(
-                                    text = "${todo.length}/$maxLength",
-                                    style = MaterialTheme.typography.caption,
-                                    textAlign = TextAlign.End
-                                )
-                            }
+                        Row(
+                            modifier = Modifier
+                                .padding(end = 12.dp)
+                                .align(Alignment.End)
+                        ) {
+                            Text(
+                                text = "${todo.length}/$maxLength",
+                                style = MaterialTheme.typography.caption,
+                                textAlign = TextAlign.End
+                            )
                         }
                         Spacer(modifier = Modifier.height(40.dp))
                         Text(
@@ -380,24 +375,18 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                                                     contentDescription = "Adding new Categories",
                                                     tint = MaterialTheme.colors.primary,
                                                     modifier = Modifier.clickable {
-                                                        val message =
-                                                            if (categories.contains(category)) {
-                                                                "Category Exists"
-                                                            } else {
-                                                                if (viewModel.insertCategory(
-                                                                        category
-                                                                    )
-                                                                ) {
-                                                                    "Added to categories"
-                                                                } else {
-                                                                    "Could not add to categories"
-                                                                }
-                                                            }
-                                                        Toast.makeText(
-                                                            context,
-                                                            message,
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
+                                                        if (categories.contains(category)) {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Category Exists",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        } else {
+                                                            viewModel.insertCategory(
+                                                                category,
+                                                                context
+                                                            )
+                                                        }
                                                     }
                                                 )
                                                 Spacer(modifier = Modifier.width(4.dp))
@@ -496,7 +485,15 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    val message = if (
+                    if (todoValidation(
+                            todo = todo,
+                            category = category,
+                            date = selectedDate.value.toString(),
+                            time = selectedTime.value.toString(),
+                            repeat = repeat,
+                            context = context
+                        )
+                    ) {
                         viewModel.insertTodo(
                             categoryName = category,
                             todo = todo,
@@ -504,23 +501,16 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                             time = DateTimeTypeConverters.fromLocalTime(selectedTime.value),
                             repeat = repeat,
                             hide = hideTodo.value,
-                            delete = deleteTodoWhenDone.value
+                            delete = deleteTodoWhenDone.value,
+                            context = context
                         )
-                    ) {
-                        "Todo Item added"
-                    } else {
-                        "Failed to add Todo"
-                    }
-                    Toast.makeText(
-                        context,
-                        message,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    navController.navigate("ui/Home") {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo("ui/AddTodoItem") {
-                            inclusive = true
+
+                        navController.navigate("ui/Home") {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo("ui/AddTodoItem") {
+                                inclusive = true
+                            }
                         }
                     }
                 },
@@ -583,13 +573,54 @@ fun Up(upPress: () -> Unit) {
     }
 }
 
-//@RequiresApi(Build.VERSION_CODES.O)
-//@Composable
-//fun AddTodoItemContent(
-//    var todo: String,
-//
-//    ) {
-//
-//}
 
-
+fun todoValidation(
+    todo: String,
+    category: String,
+    date: String,
+    time: String,
+    repeat: String,
+    context: Context
+): Boolean {
+    if (todo.isEmpty()) {
+        Toast.makeText(
+            context,
+            "Todo cannot be empty",
+            Toast.LENGTH_SHORT
+        ).show()
+        return false
+    }
+    if (category.isEmpty()) {
+        Toast.makeText(
+            context,
+            "Category cannot be empty",
+            Toast.LENGTH_SHORT
+        ).show()
+        return false
+    }
+    if (date.isEmpty()) {
+        Toast.makeText(
+            context,
+            "Date cannot be empty",
+            Toast.LENGTH_SHORT
+        ).show()
+        return false
+    }
+    if (time.isEmpty()) {
+        Toast.makeText(
+            context,
+            "Time cannot be empty",
+            Toast.LENGTH_SHORT
+        ).show()
+        return false
+    }
+    if (repeat.isEmpty()) {
+        Toast.makeText(
+            context,
+            "Repeat cannot be empty",
+            Toast.LENGTH_SHORT
+        ).show()
+        return false
+    }
+    return true
+}

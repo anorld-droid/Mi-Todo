@@ -15,10 +15,6 @@ abstract class CategoriesDao {
     @Query("SELECT name FROM categories")
     abstract fun getAllCategories(): Flow<List<String>>
 
-//    @Transaction
-//    @Query("SELECT * FROM categories")
-//    abstract  fun getCategoriesAndTodos() : Flow<List<CategoriesWithTodos>>
-
     /**
      * The following methods should really live in a base interface. Unfortunately the Kotlin
      * Compiler which we need to use for Compose doesn't work with that.
@@ -27,10 +23,6 @@ abstract class CategoriesDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insert(name: CategoryEntity): Long
-
-    @Transaction
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    abstract fun insertAll(vararg name: CategoryEntity): List<Long>
 
     @Delete
     abstract suspend fun delete(entity: CategoryEntity)

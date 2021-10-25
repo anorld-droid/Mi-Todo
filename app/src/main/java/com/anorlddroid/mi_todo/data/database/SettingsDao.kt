@@ -6,7 +6,7 @@ import androidx.room.*
 abstract class SettingsDao {
     @Transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    abstract fun insert(vararg entity: SettingsEntity): List<Long>
+    abstract suspend fun insert(vararg entity: SettingsEntity): List<Long>
 
     @Query("SELECT setting FROM settings WHERE name = :name")
     abstract suspend fun getSetting(name: String): String

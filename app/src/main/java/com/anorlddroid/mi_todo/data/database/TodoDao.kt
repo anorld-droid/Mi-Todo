@@ -8,17 +8,28 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 abstract class TodosDao {
-    @RewriteQueriesToDropUnusedColumns
-    @Query("SELECT * FROM todos")
+
+    @Query("SELECT name, date, time, repeat, hide, `delete` FROM todos")
     abstract fun getAllTodos(): Flow<List<TodoMinimal>>
+//    name, date, time, repeat, hide, `delete`
+
+    @Transaction
+    @RewriteQueriesToDropUnusedColumns
+    @Query(
+        "SELECT * FROM todos WHERE category = :name AND todos.hide = :hide"
+    )
+    abstract fun getTodoByCategory(name: String, hide: String): Flow<List<TodoMinimal>>
+
+    @Transaction
+    @RewriteQueriesToDropUnusedColumns
+    @Query(
+        "SELECT * FROM todos  WHERE category = :name "
+    )
+    abstract fun getAllTodoByCategory(name: String): Flow<List<TodoMinimal>>
 
     @RewriteQueriesToDropUnusedColumns
-    @Query("SELECT * FROM todos WHERE category_id = :id")
-    abstract fun getTodoByCategory(id: Long): Flow<List<TodoMinimal>>
-
-    @RewriteQueriesToDropUnusedColumns
-    @Query("SELECT * FROM todos WHERE hide = \"Off\" ")
-    abstract fun getUnhiddenTodos(): Flow<List<TodoMinimal>>
+    @Query("SELECT * FROM todos WHERE hide = :hide ")
+    abstract fun getUnhiddenTodos(hide: String): Flow<List<TodoMinimal>>
 
     /**
      * The following methods should really live in a base interface. Unfortunately the Kotlin

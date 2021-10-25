@@ -21,9 +21,7 @@ data class CategoryEntity(
 class CategoriesInitialData {
     companion object {
         fun data(): List<CategoryEntity> = listOf(
-            CategoryEntity(name = "Work"),
-            CategoryEntity(name = "Personal"),
-            CategoryEntity(name = "Projects")
+            CategoryEntity(name = "All"),
         )
     }
 }

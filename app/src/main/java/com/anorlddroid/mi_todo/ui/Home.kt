@@ -40,6 +40,7 @@ import com.anorlddroid.mi_todo.data.database.TodoMinimal
 import com.anorlddroid.mi_todo.ui.components.*
 import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
 import com.anorlddroid.mi_todo.ui.theme.NotoSerifDisplay
+import com.anorlddroid.mi_todo.ui.theme.ThemeState
 import com.google.accompanist.insets.statusBarsPadding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -72,7 +73,12 @@ fun Home(
                 )
                 Text(
                     text = "Dark Mode",
-                    style = MaterialTheme.typography.h5,
+                    style = TextStyle(
+                        fontFamily = NotoSerifDisplay,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 24.sp
+                    ),
                     modifier = Modifier.padding(
                         top = 2.dp,
                         bottom = 2.dp,
@@ -86,10 +92,16 @@ fun Home(
                     viewModel.themeState.collectAsState().value,
                     viewModel = viewModel
                 )
+                ThemeState.selectedTheme = viewModel.themeState.collectAsState().value
                 Log.d("HOME", viewModel.themeState.collectAsState().value)
                 Text(
                     text = "Hide",
-                    style = MaterialTheme.typography.h5,
+                    style = TextStyle(
+                        fontFamily = NotoSerifDisplay,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 24.sp
+                    ),
                     modifier = Modifier.padding(
                         top = 8.dp,
                         bottom = 2.dp,
@@ -100,7 +112,8 @@ fun Home(
                 MiTodoDivider()
                 MiTodoRadioHideGroup(
                     radioOptions = listOf("On", "Off"),
-                    viewModel.hideState.collectAsState().value
+                    viewModel.hideState.collectAsState().value,
+                    viewModel = viewModel
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -132,7 +145,7 @@ fun Home(
                 HomeBar(modifier = Modifier, coroutineScope, bottomSheetState)
             },
             content = {
-                HomeContent(viewModel = viewModel, onDeleted = { todo, delete ->
+                HomeContent(onDeleted = { todo, delete ->
                     if (delete) {
                         viewModel.deleteTodo(todo.name)
                     }
@@ -207,23 +220,27 @@ fun HomeBar(
 @Composable
 fun HomeContent(
     onDeleted: (todo: TodoMinimal, delete: Boolean) -> Unit,
-    viewModel: MiTodoViewModel,
     scaffoldState: ScaffoldState,
     coroutineScope: CoroutineScope
 ) {
-    val density = LocalDensity.current
-    val viewState by viewModel.state.collectAsState()
-    val selectedCategory = viewState.selectedCategory
+    val viewModel: MiTodoViewModel = viewModel()
+    val categories by viewModel.categories.collectAsState()
+    val todos by viewModel.todos.collectAsState()
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    Log.d("HOME", "Categories ==> $categories")
+    Log.d("HOME", "todos ==> $todos")
+    Log.d("HOME", "Selected Categories ==> $selectedCategory")
+
     Column(
         modifier = Modifier
             .padding(2.dp)
             .fillMaxSize()
     )
     {
-        if (viewState.categories.isNotEmpty()) {
+        if (categories.isNotEmpty()) {
             FilterBar(
-                categoriesFilters = viewState.categories,
-                onFilterSelected = viewModel::onCategorySelected,
+                categoriesFilters = categories,
+                onFilterSelected = viewModel::onFilterSelected,
                 selectedFilter = selectedCategory
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -236,8 +253,8 @@ fun HomeContent(
                     )
             ) {
                 item {
-                    viewState.todos.forEach { (title, todos) ->
-                        if (todos.isNotEmpty()) {
+                    todos.forEach { (title, todosList) ->
+                        if (todosList.isNotEmpty()) {
                             Text(
                                 text = title,
                                 style = TextStyle(
@@ -253,45 +270,30 @@ fun HomeContent(
                                     end = 3.dp
                                 )
                             )
-                            todos.forEachIndexed { _, todo ->
+                            todosList.forEach { todo ->
                                 key(todo) {
-                                    AnimatedVisibility(
-                                        visible = true,
-                                        enter = slideInVertically(
-                                            //slide in from 40dp from the top.
-                                            initialOffsetY = { with(density) { -40.dp.roundToPx() } }
-                                        ) + expandVertically(
-                                            //Expand from the top
-                                            expandFrom = Alignment.Top
-                                        ) + fadeIn(
-                                            //Fade in with the initial alpha of 0.3f
-                                            initialAlpha = 0.3f
-                                        ),
-                                        exit = slideOutVertically() + shrinkVertically() + fadeOut()
-                                    ) {
-                                        TodoCard(
-                                            todo = todo,
-                                            onDeleted = {
-                                                todo.hide = true
-                                                coroutineScope.launch {
-                                                    val snackbarResult =
-                                                        scaffoldState.snackbarHostState.showSnackbar(
-                                                            message = "${todo.name} deleted ",
-                                                            actionLabel = "Undo"
-                                                        )
-                                                    when (snackbarResult) {
-                                                        SnackbarResult.Dismissed -> onDeleted(
-                                                            todo,
-                                                            true
-                                                        )
-                                                        SnackbarResult.ActionPerformed -> todo.hide =
-                                                            false
-                                                    }
+                                    TodoCard(
+                                        todo = todo,
+                                        onDeleted = {
+                                            todosList.remove(todo)
+                                            coroutineScope.launch {
+                                                val snackbarResult =
+                                                    scaffoldState.snackbarHostState.showSnackbar(
+                                                        message = "${todo.name} deleted ",
+                                                        actionLabel = "Undo"
+                                                    )
+                                                when (snackbarResult) {
+                                                    SnackbarResult.Dismissed -> onDeleted(
+                                                        todo,
+                                                        true
+                                                    )
+                                                    SnackbarResult.ActionPerformed -> todosList.add(
+                                                        todo
+                                                    )
                                                 }
                                             }
-                                        )
-                                    }
-
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -313,7 +315,9 @@ fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
     val itemHeight: Float
     val explosionParticleRadius: Float
     val explosionRadius: Float
-    with(LocalDensity.current) {
+    val density = LocalDensity.current
+
+    with(density) {
         particleRadius = particleRadiusDp.toPx()
         itemHeight = itemHeightDp.toPx()
         explosionParticleRadius = dimensionResource(id = R.dimen.explosion_particle_radius).toPx()
@@ -338,10 +342,7 @@ fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
         explosionPercentage.value = (offsetX.value + funnelInitialTranslation) / screenWidth
     }
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .padding(start = 18.dp, end = 4.dp, bottom = 10.dp)
-    ) {
+    BoxWithConstraints {
         Canvas(
             modifier = Modifier
                 .height(itemHeightDp)
@@ -402,74 +403,87 @@ fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
                 angle += particleAngle
             }
         }
-        MiTodoSurface(
-            modifier = if (checked.value) {
-                Modifier
-                    .padding(start = 18.dp, end = 4.dp, bottom = 10.dp)
-                    .swipeToDelete(offsetX, maximumWidth = maxWidth.value) {
-                        onDeleted()
-                    }
-            } else {
-                Modifier
-                    .padding(start = 10.dp, end = 4.dp, bottom = 10.dp)
-            },
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colors.surface,
-            elevation = 2.dp
-
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                //slide in from 40dp from the top.
+                initialOffsetY = { with(density) { -40.dp.roundToPx() } }
+            ) + expandVertically(
+                //Expand from the top
+                expandFrom = Alignment.Top
+            ) + fadeIn(
+                //Fade in with the initial alpha of 0.3f
+                initialAlpha = 0.3f
+            ),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize(),
+            MiTodoSurface(
+                modifier = if (checked.value) {
+                    Modifier
+                        .padding(start = 18.dp, end = 4.dp, bottom = 10.dp)
+                        .swipeToDelete(offsetX, maximumWidth = maxWidth.value) {
+                            onDeleted()
+                        }
+                } else {
+                    Modifier
+                        .padding(start = 10.dp, end = 4.dp, bottom = 10.dp)
+                },
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colors.surface,
+                elevation = 2.dp
+
             ) {
-                Row(
+                Column(
                     modifier = Modifier
-                        .background(
-                            color = MaterialTheme.colors.onPrimary
-                        )
-                        .fillMaxWidth()
-                        .padding(start = 10.dp, top = 2.dp, end = 2.dp, bottom = 8.dp)
+                        .fillMaxSize(),
                 ) {
-                    Checkbox(
-                        checked = checked.value,
-                        onCheckedChange = {
-                            checked.value =
-                                it
-                        },
-                        enabled = true,
-                        colors = CheckboxDefaults.colors(
-                            Color(0xFF0E3057)
-                        ),
+                    Row(
                         modifier = Modifier
-                            .padding(top = 22.dp, start = 4.dp, end = 8.dp)
-                            .size(6.dp)
-                    )
-                    Column(
-                        modifier = Modifier.padding(
-                            horizontal = 4.dp,
-                            vertical = 2.dp
-                        )
+                            .background(
+                                color = MaterialTheme.colors.onPrimary
+                            )
+                            .fillMaxWidth()
+                            .padding(start = 10.dp, top = 2.dp, end = 2.dp, bottom = 8.dp)
                     ) {
-                        Text(
-                            text = todo.name,
-                            style = MaterialTheme.typography.h6,
+                        Checkbox(
+                            checked = checked.value,
+                            onCheckedChange = {
+                                checked.value =
+                                    it
+                            },
+                            enabled = true,
+                            colors = CheckboxDefaults.colors(
+                                Color(0xFF0E3057)
+                            ),
                             modifier = Modifier
-                                .padding(start = 5.dp, top = 12.dp)
-                                .fillMaxWidth(),
-                            textDecoration = if (checked.value) TextDecoration.LineThrough else TextDecoration.None,
+                                .padding(top = 22.dp, start = 4.dp, end = 8.dp)
+                                .size(6.dp)
                         )
-                        Text(
-                            text = "${todo.date}, ${todo.time}",
-                            style = MaterialTheme.typography.subtitle1,
-                            modifier = Modifier
-                                .padding(start = 5.dp)
-                                .fillMaxWidth()
-                        )
+                        Column(
+                            modifier = Modifier.padding(
+                                horizontal = 4.dp,
+                                vertical = 2.dp
+                            )
+                        ) {
+                            Text(
+                                text = todo.name,
+                                style = MaterialTheme.typography.h6,
+                                modifier = Modifier
+                                    .padding(start = 5.dp, top = 12.dp)
+                                    .fillMaxWidth(),
+                                textDecoration = if (checked.value) TextDecoration.LineThrough else TextDecoration.None,
+                            )
+                            Text(
+                                text = "${todo.date}, ${todo.time}",
+                                style = MaterialTheme.typography.subtitle1,
+                                modifier = Modifier
+                                    .padding(start = 5.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
         }
-
     }
 }
 
@@ -482,8 +496,12 @@ private fun Float.negateIfPositive(onPositive: () -> Unit): Float {
 }
 
 @Composable
-fun MiTodoRadioHideGroup(radioOptions: List<String>, selected: String) {
-    val (selectedOption, onOptionSelected) = remember {
+fun MiTodoRadioHideGroup(
+    radioOptions: List<String>,
+    selected: String,
+    viewModel: MiTodoViewModel
+) {
+    val (_, onOptionSelected) = remember {
         mutableStateOf(selected)
     }
     Column(
@@ -498,16 +516,18 @@ fun MiTodoRadioHideGroup(radioOptions: List<String>, selected: String) {
                         .padding(horizontal = 10.dp)
                         .fillMaxWidth()
                         .selectable(
-                            selected = (text == selectedOption),
+                            selected = (text == selected),
                             onClick = {
                                 onOptionSelected(text)
+                                viewModel.updateSetting("Hide", text)
                             }
                         ),
                 ) {
                     RadioButton(
-                        selected = (text == selectedOption),
+                        selected = (text == selected),
                         onClick = {
                             onOptionSelected(text)
+                            viewModel.updateSetting("Hide", text)
                         },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = MaterialTheme.colors.primary,
@@ -531,7 +551,7 @@ fun MiTodoRadioThemeGroup(
     selected: String,
     viewModel: MiTodoViewModel
 ) {
-    val (selectedOption, onOptionSelected) = remember {
+    val (_, onOptionSelected) = remember {
         mutableStateOf(selected)
     }
     Column(
@@ -546,16 +566,18 @@ fun MiTodoRadioThemeGroup(
                         .padding(horizontal = 10.dp)
                         .fillMaxWidth()
                         .selectable(
-                            selected = (text == selectedOption),
+                            selected = (text == selected),
                             onClick = {
                                 onOptionSelected(text)
+                                viewModel.updateSetting("Theme", text)
                             }
                         ),
                 ) {
                     RadioButton(
-                        selected = (text == selectedOption),
+                        selected = (text == selected),
                         onClick = {
                             onOptionSelected(text)
+                            viewModel.updateSetting("Theme", text)
                         },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = MaterialTheme.colors.primary,
@@ -570,11 +592,6 @@ fun MiTodoRadioThemeGroup(
                 }
             }
         }
-    }
-    when (selectedOption) {
-        "On" -> viewModel.updateSetting("Theme", "On")
-        "Off" -> viewModel.updateSetting("Theme", "Off")
-        else -> viewModel.updateSetting("Theme", "Auto")
     }
 }
 
