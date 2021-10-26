@@ -18,14 +18,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
     private val _selectedCategory = MutableStateFlow("All")
     private var repository: Repository
     private val _categories = MutableStateFlow<List<String>>(emptyList())
-    private val _todosHashMap = MutableStateFlow<MutableMap<String, MutableList<TodoMinimal>>>(
-        mutableMapOf(
-        )
-    )
 
 
     // Holds our view state which the UI collects via [state]
-//    private val _state = MutableStateFlow(MiTodoViewState())
+    private val _state = MutableStateFlow(HomeViewState())
 
     private val refreshing = MutableStateFlow(false)
 
@@ -37,15 +33,17 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
     val hideState: StateFlow<String>
         get() = _hideState
 
-    val selectedCategory: StateFlow<String>
-        get() = _selectedCategory
+//    val selectedCategory: StateFlow<String>
+//        get() = _selectedCategory
 
     val categories: StateFlow<List<String>>
         get() = _categories
 
-    val todos: StateFlow<Map<String, MutableList<TodoMinimal>>>
-        get() = _todosHashMap
+//    val todos: StateFlow<Map<String, MutableList<TodoMinimal>>>
+//        get() = _todosHashMap
 
+    val state: StateFlow<HomeViewState>
+        get() = _state
 
     init {
         val db = MiTodoDatabase.getDatabase(application)
@@ -60,51 +58,52 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
         viewModelScope.launch {
-            val todosList = if (_selectedCategory.value != "All") {
-                if (_hideState.value == "On") {
-                    repository.getTodoByCategory(_selectedCategory.value, "false")
-
-                } else {
-                    repository.getAllTodoByCategory(_selectedCategory.value)
-                }
-            } else {
-                if (_hideState.value == "On") {
-                    repository.getUnHiddenTodos("false")
-                } else {
-                    repository.getAllTodos()
-                }
-            }
-            updateTodos(todoList = todosList)
+            updateTodos("All")
         }
     }
 
 
     fun onFilterSelected(category: String) {
         Log.d("ONFILTERSELECTED", category)
-        _selectedCategory.value = category
         viewModelScope.launch {
-            val todosList = if (_selectedCategory.value != "All") {
-                if (_hideState.value == "On") {
-                    repository.getTodoByCategory(_selectedCategory.value, "false")
-
-                } else {
-                    repository.getAllTodoByCategory(_selectedCategory.value)
-                }
-            } else {
-                if (_hideState.value == "On") {
-                    repository.getUnHiddenTodos("false")
-                } else {
-                    repository.getAllTodos()
-                }
-            }
-            updateTodos(todoList = todosList)
+            updateTodos(category = category)
         }
+//        viewModelScope.launch {
+//            val todosList = if (_selectedCategory.value != "All") {
+//                if (_hideState.value == "On") {
+//                    repository.getTodoByCategory(_selectedCategory.value, "false")
+//
+//                } else {
+//                    repository.getAllTodoByCategory(_selectedCategory.value)
+//                }
+//            } else {
+//                if (_hideState.value == "On") {
+//                    repository.getUnHiddenTodos("false")
+//                } else {
+//                    repository.getAllTodos()
+//                }
+//            }
+//            _todosHashMap.value = mutableMapOf(
+//                "Today" to mutableListOf(),
+//                "Tomorrow" to mutableListOf(),
+//                "Monday" to mutableListOf(),
+//                "Tuesday" to mutableListOf(),
+//                "Wednesday" to mutableListOf(),
+//                "Thursday" to mutableListOf(),
+//                "Friday" to mutableListOf(),
+//                "Saturday" to mutableListOf(),
+//                "Sunday" to mutableListOf()
+//            )
+//            updateTodos(todoList = todosList)
+//        }
     }
 
     fun updateSetting(name: String, setting: String) {
         viewModelScope.launch {
             if (name == "Theme") {
                 _themeState.value = setting
+            } else {
+                _hideState.value = setting
             }
             val settings = SettingsEntity(name = name, setting = setting)
             repository.insertSetting(settings)
@@ -152,19 +151,51 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    private suspend fun updateTodos(todoList: Flow<List<TodoMinimal>>) {
-        _todosHashMap.value = mutableMapOf(
-            "Today" to mutableListOf(),
-            "Tomorrow" to mutableListOf(),
-            "Monday" to mutableListOf(),
-            "Tuesday" to mutableListOf(),
-            "Wednesday" to mutableListOf(),
-            "Thursday" to mutableListOf(),
-            "Friday" to mutableListOf(),
-            "Saturday" to mutableListOf(),
-            "Sunday" to mutableListOf()
+    private suspend fun updateTodos(category: String) {
+        _selectedCategory.value = category
+        combine(
+            _selectedCategory,
+            if (_selectedCategory.value != "All") {
+                if (_hideState.value == "On") {
+                    sortTodos(repository.getTodoByCategory(_selectedCategory.value, "false"))
+
+                } else {
+                    sortTodos(repository.getAllTodoByCategory(_selectedCategory.value))
+                }
+            } else {
+                if (_hideState.value == "On") {
+                    sortTodos(repository.getUnHiddenTodos("false"))
+                } else {
+                    sortTodos(repository.getAllTodos())
+                }
+            }
+        ) { selectedCategory, todoMap ->
+            HomeViewState(
+                selectedCategory = selectedCategory,
+                todos = todoMap
+            )
+        }.catch { throwable ->
+            throw throwable
+        }.collect {
+            _state.value = it
+        }
+    }
+
+    private suspend fun sortTodos(todolist: Flow<List<TodoMinimal>>): MutableStateFlow<MutableMap<String, MutableList<TodoMinimal>>> {
+        val todosHashMap = MutableStateFlow<MutableMap<String, MutableList<TodoMinimal>>>(
+            mutableMapOf(
+                "Today" to mutableListOf(),
+                "Tomorrow" to mutableListOf(),
+                "Monday" to mutableListOf(),
+                "Tuesday" to mutableListOf(),
+                "Wednesday" to mutableListOf(),
+                "Thursday" to mutableListOf(),
+                "Friday" to mutableListOf(),
+                "Saturday" to mutableListOf(),
+                "Sunday" to mutableListOf()
+            )
         )
-        todoList.collect {
+        todolist.collect {
             it.forEach { todoMinimal ->
                 Log.d("REPO", " Collecting  :${todoMinimal}")
                 val today = LocalDate.now()
@@ -174,10 +205,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                             it1
                         )
                     } == today) {
-                    if (_todosHashMap.value["Today"]?.isEmpty() == true) {
-                        _todosHashMap.value["Today"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Today"]?.isEmpty() == true) {
+                        todosHashMap.value["Today"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Today"]?.add(todoMinimal)
+                        todosHashMap.value["Today"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -185,10 +216,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                             it1
                         )
                     } == tomorrow) {
-                    if (_todosHashMap.value["Tomorrow"]?.isEmpty() == true) {
-                        _todosHashMap.value["Tomorrow"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Tomorrow"]?.isEmpty() == true) {
+                        todosHashMap.value["Tomorrow"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Tomorrow"]?.add(todoMinimal)
+                        todosHashMap.value["Tomorrow"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -207,10 +238,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     } != tomorrow
                 ) {
-                    if (_todosHashMap.value["Monday"]?.isEmpty() == true) {
-                        _todosHashMap.value["Monday"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Monday"]?.isEmpty() == true) {
+                        todosHashMap.value["Monday"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Monday"]?.add(todoMinimal)
+                        todosHashMap.value["Monday"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -229,10 +260,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     } != tomorrow
                 ) {
-                    if (_todosHashMap.value["Tuesday"]?.isEmpty() == true) {
-                        _todosHashMap.value["Tuesday"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Tuesday"]?.isEmpty() == true) {
+                        todosHashMap.value["Tuesday"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Tuesday"]?.add(todoMinimal)
+                        todosHashMap.value["Tuesday"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -251,10 +282,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     } != tomorrow
                 ) {
-                    if (_todosHashMap.value["Wednesday"]?.isEmpty() == true) {
-                        _todosHashMap.value["Wednesday"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Wednesday"]?.isEmpty() == true) {
+                        todosHashMap.value["Wednesday"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Wednesday"]?.add(todoMinimal)
+                        todosHashMap.value["Wednesday"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -273,10 +304,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     } != tomorrow
                 ) {
-                    if (_todosHashMap.value["Thursday"]?.isEmpty() == true) {
-                        _todosHashMap.value["Thursday"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Thursday"]?.isEmpty() == true) {
+                        todosHashMap.value["Thursday"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Thursday"]?.add(todoMinimal)
+                        todosHashMap.value["Thursday"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -295,10 +326,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     } != tomorrow
                 ) {
-                    if (_todosHashMap.value["Friday"]?.isEmpty() == true) {
-                        _todosHashMap.value["Friday"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Friday"]?.isEmpty() == true) {
+                        todosHashMap.value["Friday"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Friday"]?.add(todoMinimal)
+                        todosHashMap.value["Friday"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -317,10 +348,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     } != tomorrow
                 ) {
-                    if (_todosHashMap.value["Saturday"]?.isEmpty() == true) {
-                        _todosHashMap.value["Saturday"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Saturday"]?.isEmpty() == true) {
+                        todosHashMap.value["Saturday"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Saturday"]?.add(todoMinimal)
+                        todosHashMap.value["Saturday"]?.add(todoMinimal)
                     }
                 }
                 if (todoMinimal.date.let { it1 ->
@@ -339,15 +370,22 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                         )
                     } != tomorrow
                 ) {
-                    if (_todosHashMap.value["Sunday"]?.isEmpty() == true) {
-                        _todosHashMap.value["Sunday"] = mutableListOf(todoMinimal)
+                    if (todosHashMap.value["Sunday"]?.isEmpty() == true) {
+                        todosHashMap.value["Sunday"] = mutableListOf(todoMinimal)
                     } else {
-                        _todosHashMap.value["Sunday"]?.add(todoMinimal)
+                        todosHashMap.value["Sunday"]?.add(todoMinimal)
                     }
                 }
             }
         }
+        Log.d("REPO", "Returning ==> ${todosHashMap.value}")
+        return todosHashMap
     }
 }
+
+data class HomeViewState(
+    val selectedCategory: String = "All",
+    val todos: Map<String, MutableList<TodoMinimal>> = emptyMap()
+)
 
 

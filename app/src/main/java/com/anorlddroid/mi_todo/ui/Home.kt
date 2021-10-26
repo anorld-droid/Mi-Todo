@@ -225,8 +225,10 @@ fun HomeContent(
 ) {
     val viewModel: MiTodoViewModel = viewModel()
     val categories by viewModel.categories.collectAsState()
-    val todos by viewModel.todos.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val viewState by viewModel.state.collectAsState()
+
+    val todos = viewState.todos
+    val selectedCategory = viewState.selectedCategory
     Log.d("HOME", "Categories ==> $categories")
     Log.d("HOME", "todos ==> $todos")
     Log.d("HOME", "Selected Categories ==> $selectedCategory")
