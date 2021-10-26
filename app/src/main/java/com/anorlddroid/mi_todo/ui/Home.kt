@@ -1,6 +1,7 @@
 package com.anorlddroid.mi_todo.ui
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.TextStyle
@@ -225,10 +227,9 @@ fun HomeContent(
 ) {
     val viewModel: MiTodoViewModel = viewModel()
     val categories by viewModel.categories.collectAsState()
-    val viewState by viewModel.state.collectAsState()
-
-    val todos = viewState.todos
-    val selectedCategory = viewState.selectedCategory
+    val todos by viewModel.todos.collectAsState()
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val context = LocalContext.current
     Log.d("HOME", "Categories ==> $categories")
     Log.d("HOME", "todos ==> $todos")
     Log.d("HOME", "Selected Categories ==> $selectedCategory")
@@ -239,7 +240,7 @@ fun HomeContent(
             .fillMaxSize()
     )
     {
-        if (categories.isNotEmpty()) {
+        if (todos.isNotEmpty()) {
             FilterBar(
                 categoriesFilters = categories,
                 onFilterSelected = viewModel::onFilterSelected,
@@ -274,28 +275,73 @@ fun HomeContent(
                             )
                             todosList.forEach { todo ->
                                 key(todo) {
-                                    TodoCard(
-                                        todo = todo,
-                                        onDeleted = {
-                                            todosList.remove(todo)
-                                            coroutineScope.launch {
-                                                val snackbarResult =
-                                                    scaffoldState.snackbarHostState.showSnackbar(
-                                                        message = "${todo.name} deleted ",
-                                                        actionLabel = "Undo"
-                                                    )
-                                                when (snackbarResult) {
-                                                    SnackbarResult.Dismissed -> onDeleted(
-                                                        todo,
-                                                        true
-                                                    )
-                                                    SnackbarResult.ActionPerformed -> todosList.add(
-                                                        todo
-                                                    )
+                                    if (selectedCategory != "All") {
+                                        if (selectedCategory == todo.category) {
+                                            TodoCard(
+                                                todo = todo,
+                                                onDeleted = {
+                                                    val todoitem = todo
+                                                    viewModel.deleteTodo(todo.name)
+                                                    coroutineScope.launch {
+                                                        val snackbarResult =
+                                                            scaffoldState.snackbarHostState.showSnackbar(
+                                                                message = "${todo.name} deleted ",
+                                                                actionLabel = "Undo"
+                                                            )
+                                                        when (snackbarResult) {
+                                                            SnackbarResult.ActionPerformed -> viewModel.insertTodo(
+                                                                categoryName = todoitem.category,
+                                                                todo = todoitem.name,
+                                                                date = todoitem.date,
+                                                                time = todoitem.time,
+                                                                repeat = todoitem.repeat,
+                                                                hide = todoitem.hide,
+                                                                delete = todoitem.delete,
+                                                                context = context
+                                                            )
+                                                            SnackbarResult.Dismissed -> Toast.makeText(
+                                                                context,
+                                                                "Item deleted",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    } else {
+                                        TodoCard(
+                                            todo = todo,
+                                            onDeleted = {
+                                                val todoitem = todo
+                                                viewModel.deleteTodo(todo.name)
+                                                coroutineScope.launch {
+                                                    val snackbarResult =
+                                                        scaffoldState.snackbarHostState.showSnackbar(
+                                                            message = "${todo.name} deleted ",
+                                                            actionLabel = "Undo"
+                                                        )
+                                                    when (snackbarResult) {
+                                                        SnackbarResult.ActionPerformed -> viewModel.insertTodo(
+                                                            categoryName = todoitem.category,
+                                                            todo = todoitem.name,
+                                                            date = todoitem.date,
+                                                            time = todoitem.time,
+                                                            repeat = todoitem.repeat,
+                                                            hide = todoitem.hide,
+                                                            delete = todoitem.delete,
+                                                            context = context
+                                                        )
+                                                        SnackbarResult.Dismissed -> Toast.makeText(
+                                                            context,
+                                                            "Item deleted",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
                                                 }
                                             }
-                                        }
-                                    )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -303,6 +349,16 @@ fun HomeContent(
                 }
             }
         } else {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .align(alignment = Alignment.CenterHorizontally)
+            ) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.empty_list),
+//                    contentDescription = "Empty List")
+
+            }
 
         }
     }
@@ -609,7 +665,8 @@ fun TodoCardPreview() {
                 "",
                 "",
                 hide = false,
-                delete = true
+                delete = true,
+                repeat = "Never"
             ),
             onDeleted = {},
         )

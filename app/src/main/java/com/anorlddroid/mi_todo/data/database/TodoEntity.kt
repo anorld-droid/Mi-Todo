@@ -21,6 +21,7 @@ data class TodoEntity(
 )
 
 data class TodoMinimal(
+    @ColumnInfo(name = "category") var category: String,
     @ColumnInfo(name = "name") var name: String,
     @ColumnInfo(name = "date") var date: String,
     @ColumnInfo(name = "time") var time: String,

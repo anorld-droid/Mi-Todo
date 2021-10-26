@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 abstract class TodosDao {
 
-    @Query("SELECT name, date, time, repeat, hide, `delete` FROM todos")
+    @Query("SELECT category, name, date, time, repeat, hide, `delete` FROM todos")
     abstract fun getAllTodos(): Flow<List<TodoMinimal>>
 //    name, date, time, repeat, hide, `delete`
 
