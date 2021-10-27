@@ -423,7 +423,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                                             onDismissRequest = { showCategory = false },
 
                                             ) {
-                                            categories.subList(1, categories.lastIndex)
+                                            categories.subList(1, categories.lastIndex + 1)
                                                 .forEach { listCategory ->
                                                     DropdownMenuItem(onClick = {
                                                         showCategory = false
