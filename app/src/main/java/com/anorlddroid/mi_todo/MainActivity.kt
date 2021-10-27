@@ -2,13 +2,13 @@ package com.anorlddroid.mi_todo
 
 import android.os.Build
 import android.os.Bundle
-import android.preference.PreferenceManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.anorlddroid.mi_todo.data.database.CategoriesInitialData
 import com.anorlddroid.mi_todo.data.database.DataGenerator
 import com.anorlddroid.mi_todo.data.database.MiTodoDatabase
