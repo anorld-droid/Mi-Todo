@@ -65,7 +65,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
     var todo by remember { mutableStateOf("") }
 
     //Category
-    var category by remember { mutableStateOf("Select category or add new ") }
+    var category by remember { mutableStateOf("") }
     var showCategory by remember { mutableStateOf(false) }
     val categories by viewModel.categories.collectAsState()
 
@@ -87,7 +87,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
             ) {
                 item {
                     val maxLength by remember {
-                        mutableStateOf(30)
+                        mutableStateOf(70)
                     }
                     Column(
                         modifier = Modifier
@@ -423,17 +423,18 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                                             onDismissRequest = { showCategory = false },
 
                                             ) {
-                                            categories.forEach { listCategory ->
-                                                DropdownMenuItem(onClick = {
-                                                    showCategory = false
-                                                    category = listCategory
-                                                }) {
-                                                    Text(
-                                                        text = listCategory,
-                                                        style = MaterialTheme.typography.h6,
-                                                        color = MaterialTheme.colors.secondary
-                                                    )
-                                                }
+                                            categories.subList(1, categories.lastIndex)
+                                                .forEach { listCategory ->
+                                                    DropdownMenuItem(onClick = {
+                                                        showCategory = false
+                                                        category = listCategory
+                                                    }) {
+                                                        Text(
+                                                            text = listCategory,
+                                                            style = MaterialTheme.typography.h6,
+                                                            color = MaterialTheme.colors.secondary
+                                                        )
+                                                    }
                                             }
                                         }
                                     }

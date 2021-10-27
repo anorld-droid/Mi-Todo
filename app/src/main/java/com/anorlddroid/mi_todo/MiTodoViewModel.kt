@@ -44,8 +44,6 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
     val todos: StateFlow<Map<String, List<TodoMinimal>>>
         get() = _todosHashMap
 
-//    val state: StateFlow<HomeViewState>
-//        get() = _state
 
     init {
         val db = MiTodoDatabase.getDatabase(application)
@@ -59,29 +57,15 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                 Log.d("VIEWMODEL", " Categories from repo :${it}")
             }
         }
-        onFilterSelected(_selectedCategory.value)
+        viewModelScope.launch {
+            updateTodos(todolist = repository.getAllTodos())
+        }
     }
 
 
     fun onFilterSelected(category: String) {
         Log.d("ONFILTERSELECTED", category)
         _selectedCategory.value = category
-        viewModelScope.launch {
-//            val todos = if (_selectedCategory.value != "All") {
-//                if (_hideState.value == "On") {
-//                    repository.getTodoByCategory(_selectedCategory.value, "false")
-//
-//                } else {
-//                    repository.getAllTodoByCategory(_selectedCategory.value)
-//                }
-//            } else {
-            val todos = if (_hideState.value == "On") {
-                repository.getUnHiddenTodos("false")
-            } else {
-                repository.getAllTodos()
-            }
-            updateTodos(todolist = todos)
-        }
     }
 
     fun updateSetting(name: String, setting: String) {
@@ -336,10 +320,5 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 }
-
-//data class HomeViewState(
-//    val selectedCategory : String = "All",
-//    val todos : StateFlow<Map<String, MutableList<TodoMinimal>>>
-//)
 
 
