@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 abstract class TodosDao {
 
-    @Query("SELECT category, name, date, time, repeat, hide, `delete` FROM todos")
+    @Query("SELECT id, category, name, date, time, repeat, hide, `delete` FROM todos")
     abstract fun getAllTodos(): Flow<List<TodoMinimal>>
 //    name, date, time, repeat, hide, `delete`
 
@@ -42,4 +42,7 @@ abstract class TodosDao {
 
     @Query("DELETE FROM todos WHERE name= :name")
     abstract suspend fun delete(name: String): Int
+
+    @Query("UPDATE todos SET date = :date WHERE id = :id")
+    abstract suspend fun updateTodo(date: String, id: Int): Int
 }

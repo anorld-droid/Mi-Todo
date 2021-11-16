@@ -31,7 +31,7 @@ val Typography = Typography(
         lineHeight = 24.sp
     ),
     h6 = TextStyle(
-        fontFamily = NotoSerifDisplay,
+//        fontFamily = NotoSerifDisplay,
         fontSize = 20.sp,
         fontWeight = FontWeight.Normal,
         lineHeight = 24.sp

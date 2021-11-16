@@ -2,6 +2,7 @@ package com.anorlddroid.mi_todo
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ScaffoldState
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import com.anorlddroid.mi_todo.ui.AddTodoItem
 import com.anorlddroid.mi_todo.ui.Home
 import kotlinx.coroutines.CoroutineScope
 
+@ExperimentalAnimationApi
 @ExperimentalMaterialApi
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable

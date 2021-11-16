@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
 
 class MiTodoViewModel(application: Application) : AndroidViewModel(application) {
     // Holds our currently selected category
@@ -58,7 +59,7 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
         viewModelScope.launch {
-            updateTodos(todolist = repository.getAllTodos())
+            formatTodos(todolist = repository.getAllTodos())
         }
     }
 
@@ -121,7 +122,7 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    private suspend fun updateTodos(todolist: Flow<List<TodoMinimal>>) {
+    private suspend fun formatTodos(todolist: Flow<List<TodoMinimal>>) {
         todolist.collect {
             if (it.isNotEmpty()) {
                 _todosHashMap.value = mutableMapOf(
@@ -137,6 +138,14 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                 )
                 it.forEach { todoMinimal ->
                     Log.d("REPO", " Collecting  :${todoMinimal}")
+                    sanitizeTasks(
+                        date = DateTimeTypeConverters.toLocalDate(todoMinimal.date),
+                        time = DateTimeTypeConverters.toLocalTime(todoMinimal.time),
+                        delete = todoMinimal.delete,
+                        todo = todoMinimal.name,
+                        repeat = todoMinimal.repeat,
+                        id = todoMinimal.id
+                    )
                     val today = LocalDate.now()
                     val tomorrow = today.plusDays(1)
                     if (todoMinimal.date.let { it1 ->
@@ -319,6 +328,42 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+    fun sanitizeTasks(date: LocalDate, time: LocalTime, delete: Boolean, todo: String, id: Int, repeat: String){
+        if (date < LocalDate.now() && delete && repeat == "Never"){
+            viewModelScope.launch {
+                repository.deleteTodo(todo)
+            }
+        }else if (date == LocalDate.now() && time < LocalTime.now() && delete && repeat == "Never"){
+            viewModelScope.launch {
+                repository.deleteTodo(todo)
+            }
+        }else if (date < LocalDate.now() &&  repeat == "Daily"){
+            viewModelScope.launch {
+                val ndate = date.plusDays(1)
+                val updated = repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+                Log.d("VIEWMODELUPDATE", updated.toString() )
+            }
+        }else if (date < LocalDate.now() &&  repeat == "Weekly"){
+            viewModelScope.launch {
+                val ndate = date.plusWeeks(1)
+                val updated = repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+                Log.d("VIEWMODELUPDATE", updated.toString() )
+            }
+        }else if (date < LocalDate.now() &&  repeat == "Monthly"){
+            viewModelScope.launch {
+                val ndate = date.plusMonths(1)
+                val updated = repository.updateTodo( DateTimeTypeConverters.fromLocalDate(ndate), id)
+                Log.d("VIEWMODELUPDATE", updated.toString() )
+            }
+        }else if (date < LocalDate.now() &&  repeat == "Yearly"){
+            viewModelScope.launch {
+                val ndate = date.plusYears(1)
+                val updated = repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+                Log.d("VIEWMODELUPDATE", updated.toString() )
+            }
+        }
+    }
 }
+
 
 

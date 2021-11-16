@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Mi-Todo</string>
+    <string name="channel_name">Channel_One</string>
+    <string name="channel_description">Notify Upcoming Task</string>
 </resources>

@@ -314,7 +314,8 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                                                 .background(
                                                     color = MaterialTheme.colors.onPrimary
                                                 )
-                                                .width(maxWidth),
+                                                .width(maxWidth)
+                                                .height(120.dp),
                                             expanded = showRepeat,
                                             onDismissRequest = { showRepeat = false },
 
@@ -417,7 +418,7 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
                                                 .background(
                                                     color = MaterialTheme.colors.onPrimary
                                                 )
-                                                .width(maxWidth - 0.dp)
+                                                .width(maxWidth)
                                                 .height(120.dp),
                                             expanded = showCategory,
                                             onDismissRequest = { showCategory = false },

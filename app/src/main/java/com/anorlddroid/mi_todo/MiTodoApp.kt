@@ -2,6 +2,7 @@ package com.anorlddroid.mi_todo
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import com.anorlddroid.mi_todo.ui.components.MiTodoScaffold
 import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
 import com.google.accompanist.insets.ProvideWindowInsets
 
+@ExperimentalAnimationApi
 @RequiresApi(Build.VERSION_CODES.O)
 @ExperimentalMaterialApi
 @Composable

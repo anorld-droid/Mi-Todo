@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
 )
 @Immutable
 data class TodoEntity(
-    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") val id: Long = 0,
+    @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "category") var category: String,
     @ColumnInfo(name = "name") var name: String,
     @ColumnInfo(name = "date") var date: String? = null,
@@ -21,6 +21,7 @@ data class TodoEntity(
 )
 
 data class TodoMinimal(
+    @ColumnInfo(name = "id") val id: Int,
     @ColumnInfo(name = "category") var category: String,
     @ColumnInfo(name = "name") var name: String,
     @ColumnInfo(name = "date") var date: String,

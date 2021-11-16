@@ -1,5 +1,13 @@
 package com.anorlddroid.mi_todo.ui
 
+import android.app.AlarmManager
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.PendingIntent.getActivity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
@@ -19,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -33,10 +42,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationCompat.VISIBILITY_PRIVATE
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.anorlddroid.mi_todo.MiTodoViewModel
 import com.anorlddroid.mi_todo.R
+import com.anorlddroid.mi_todo.SplashScreenActivity
+import com.anorlddroid.mi_todo.data.database.DateTimeTypeConverters
 import com.anorlddroid.mi_todo.data.database.TodoMinimal
 import com.anorlddroid.mi_todo.ui.components.*
 import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
@@ -45,10 +60,16 @@ import com.anorlddroid.mi_todo.ui.theme.ThemeState
 import com.google.accompanist.insets.statusBarsPadding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalTime
+import java.util.*
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+const val CHANNEL_ID = "channel 1"
+
+@ExperimentalAnimationApi
 @ExperimentalMaterialApi
 @Composable
 fun Home(
@@ -197,6 +218,7 @@ fun HomeBar(
     }
 }
 
+@ExperimentalAnimationApi
 @Composable
 fun HomeContent(
     hide: String,
@@ -280,7 +302,8 @@ fun HomeContent(
                                                                     )
                                                                 }
                                                             }
-                                                        }
+                                                        },
+                                                        context = context
                                                     )
                                                 }
                                             }
@@ -309,7 +332,8 @@ fun HomeContent(
                                                                 )
                                                             }
                                                         }
-                                                    }
+                                                    },
+                                                    context = context
                                                 )
                                             }
                                         }
@@ -339,7 +363,8 @@ fun HomeContent(
                                                                 )
                                                             }
                                                         }
-                                                    }
+                                                    },
+                                                    context = context,
                                                 )
                                             }
                                         } else {
@@ -366,7 +391,8 @@ fun HomeContent(
                                                             )
                                                         }
                                                     }
-                                                }
+                                                },
+                                                context = context
                                             )
                                         }
                                     }
@@ -405,8 +431,13 @@ fun HomeContent(
 }
 
 
+@ExperimentalAnimationApi
 @Composable
-fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
+fun TodoCard(
+    todo: TodoMinimal,
+    onDeleted: () -> Unit,
+    context: Context
+) {
     val particleRadiusDp = dimensionResource(id = R.dimen.particle_radius)
     val particleRadius: Float
     val itemHeightDp = dimensionResource(id = R.dimen.image_size)
@@ -438,6 +469,11 @@ fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
     val funnelTranslation = remember { mutableStateOf(funnelInitialTranslation) }
     funnelTranslation.value = (offsetX.value + funnelInitialTranslation).negateIfPositive {
         explosionPercentage.value = (offsetX.value + funnelInitialTranslation) / screenWidth
+    }
+    if (DateTimeTypeConverters.toLocalDate(todo.date) < LocalDate.now() && !todo.delete && todo.repeat != "Never"){
+        checked.value = true
+    }else if (DateTimeTypeConverters.toLocalDate(todo.date) == LocalDate.now() && DateTimeTypeConverters.toLocalTime(todo.time) < LocalTime.now() && !todo.delete && todo.repeat != "Never"){
+        checked.value = true
     }
 
     BoxWithConstraints {
@@ -503,16 +539,9 @@ fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
         }
         AnimatedVisibility(
             visible = true,
-            enter = slideInVertically(
-                //slide in from 40dp from the top.
-                initialOffsetY = { with(density) { -40.dp.roundToPx() } }
-            ) + expandVertically(
-                //Expand from the top
-                expandFrom = Alignment.Top
-            ) + fadeIn(
-                //Fade in with the initial alpha of 0.3f
-                initialAlpha = 0.3f
-            ),
+            enter = scaleIn(
+                initialScale = 0.3f,
+            ) ,
         ) {
             MiTodoSurface(
                 modifier = if (checked.value) {
@@ -582,6 +611,14 @@ fun TodoCard(todo: TodoMinimal, onDeleted: () -> Unit) {
                 }
             }
         }
+        setAlarm(
+            date = DateTimeTypeConverters.toLocalDate(todo.date),
+            time = DateTimeTypeConverters.toLocalTime(todo.time),
+            context = context,
+            category = todo.category,
+            todo = todo.name,
+            notificationid = todo.id
+        )
     }
 }
 
@@ -693,6 +730,38 @@ fun MiTodoRadioThemeGroup(
     }
 }
 
+fun setAlarm(
+    date: LocalDate,
+    time: LocalTime,
+    context: Context,
+    category: String,
+    todo: String,
+    notificationid: Int
+) {
+    if (date == LocalDate.now()) {
+        if (time >= LocalTime.now()) {
+            val calendar: Calendar = Calendar.getInstance()
+            calendar.set(Calendar.HOUR_OF_DAY, time.hour)
+            calendar.set(Calendar.MINUTE, time.minute - 5)
+            calendar.set(Calendar.SECOND, time.second)
+            val intent = Intent(context, AlarmReceiver::class.java)
+            intent.data = Uri.parse("timer:$notificationid")
+            intent.putExtra("Category", category)
+            intent.putExtra("Todo", todo)
+            intent.putExtra("NotificationID", notificationid)
+            val pendingIntent: PendingIntent = PendingIntent.getBroadcast(
+                context, 0, intent, 0
+            )
+            val alarmManager: AlarmManager =
+                context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+//        alarmManager.cancel(pendingIntent)
+            Log.d("HOME", "Alarm set")
+        }
+    }
+
+}
+
 @ExperimentalAnimationApi
 @Preview
 @Composable
@@ -700,6 +769,7 @@ fun TodoCardPreview() {
     MiTodoTheme {
         TodoCard(
             TodoMinimal(
+                1,
                 "Cook Supper",
                 "21 March 2021, 08:34am",
                 "",
@@ -709,6 +779,7 @@ fun TodoCardPreview() {
                 repeat = "Never"
             ),
             onDeleted = {},
+            context = LocalContext.current
         )
     }
 }
