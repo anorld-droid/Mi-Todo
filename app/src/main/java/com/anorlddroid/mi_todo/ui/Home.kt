@@ -152,8 +152,6 @@ fun Home(
                     scaffoldState = scaffoldState,
                     coroutineScope = coroutineScope
                 )
-
-
             },
             floatingActionButton = {
                 FloatingActionButton(
@@ -755,31 +753,9 @@ fun setAlarm(
             val alarmManager: AlarmManager =
                 context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-//        alarmManager.cancel(pendingIntent)
             Log.d("HOME", "Alarm set")
         }
     }
-
 }
 
-@ExperimentalAnimationApi
-@Preview
-@Composable
-fun TodoCardPreview() {
-    MiTodoTheme {
-        TodoCard(
-            TodoMinimal(
-                1,
-                "Cook Supper",
-                "21 March 2021, 08:34am",
-                "",
-                "",
-                hide = false,
-                delete = true,
-                repeat = "Never"
-            ),
-            onDeleted = {},
-            context = LocalContext.current
-        )
-    }
-}
+

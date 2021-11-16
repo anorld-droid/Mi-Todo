@@ -30,14 +30,3 @@ fun MiTodoDivider(
 }
 
 private const val DividerAlpha = 0.12f
-
-@Preview("default", showBackground = true)
-@Preview("dark theme", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
-@Composable
-private fun DividerPreview() {
-    MiTodoTheme {
-        Box(Modifier.size(height = 10.dp, width = 100.dp)) {
-            MiTodoDivider(Modifier.align(Alignment.Center))
-        }
-    }
-}

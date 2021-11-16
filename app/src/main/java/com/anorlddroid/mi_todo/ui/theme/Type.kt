@@ -11,12 +11,13 @@ import com.anorlddroid.mi_todo.R
 
 
 val NotoSerifDisplay = FontFamily(
-    Font(R.font.notoserifdisplay_thinitalic, FontWeight.Thin),
     Font(R.font.notoserifdisplay_light, FontWeight.Light),
     Font(R.font.notoserifdisplay_extracondensed_regular, FontWeight.Normal),
-    Font(R.font.notoserifdisplay_mediumitalic, FontWeight.Medium),
     Font(R.font.notoserifdisplay_bolditalic, FontWeight.Bold),
-)
+    )
+val Merienda = FontFamily(
+    Font(R.font.merienda_regular, FontWeight.Normal),
+    )
 val Typography = Typography(
     h3 = TextStyle(
         fontFamily = NotoSerifDisplay,
@@ -31,7 +32,7 @@ val Typography = Typography(
         lineHeight = 24.sp
     ),
     h6 = TextStyle(
-//        fontFamily = NotoSerifDisplay,
+        fontFamily = Merienda,
         fontSize = 20.sp,
         fontWeight = FontWeight.Normal,
         lineHeight = 24.sp

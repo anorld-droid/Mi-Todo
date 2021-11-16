@@ -1,7 +1,6 @@
 package com.anorlddroid.mi_todo.ui.components
 
 
-import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,9 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.anorlddroid.mi_todo.ui.theme.MiTodoTheme
 
 @Composable
 fun FilterBar(
@@ -147,30 +144,3 @@ fun FilterChip(
     }
 }
 
-
-@Preview("default")
-@Preview("dark theme", uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Preview("large font", fontScale = 2f)
-@Composable
-private fun FilterDisabledPreview() {
-    MiTodoTheme {
-        FilterChip(
-            filter = "Demo",
-            true,
-            Modifier.padding(4.dp)
-        )
-    }
-}
-
-@Preview("default")
-@Preview("dark theme", uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Preview("large font", fontScale = 2f)
-@Composable
-private fun FilterEnabledPreview() {
-    MiTodoTheme {
-        FilterChip(
-            filter = "Demo",
-            true
-        )
-    }
-}

@@ -53,7 +53,6 @@ fun AddTodoItem(upPress: () -> Unit, navController: NavController) {
     //viewModel
     val context = LocalContext.current
     val viewModel: MiTodoViewModel = viewModel()
-//    val viewState by viewModel.state.collectAsState()
 
     //time and date variable states
     val dateDialog = rememberMaterialDialogState()
@@ -534,7 +533,6 @@ fun AddTodoItemBar(modifier: Modifier = Modifier, upPress: () -> Unit) {
             modifier = modifier,
             backgroundColor = MaterialTheme.colors.background.copy(alpha = AlphaNearOpaque),
             contentColor = MaterialTheme.colors.secondary,
-            elevation = 0.dp, // No shadow needed
             actions = {
 
             },
