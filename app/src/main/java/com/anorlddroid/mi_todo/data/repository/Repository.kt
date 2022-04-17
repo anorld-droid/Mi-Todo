@@ -15,5 +15,7 @@ class Repository(private val dbInstance: MiTodoDatabase) {
     suspend fun getSetting(name: String) = dbInstance.settingsDao().getSetting(name)
     suspend fun insertSetting(entity: SettingsEntity) = dbInstance.settingsDao().insert(entity)
     suspend fun updateTodo(date: String, id: Int) = dbInstance.TodosDao().updateTodo(date, id)
+    suspend fun completedTodo(completed: Boolean, id: Int) =
+        dbInstance.TodosDao().completedTodo(completed, id)
 
 }
