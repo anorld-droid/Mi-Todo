@@ -19,12 +19,12 @@ data class SettingsEntity(
     @ColumnInfo(name = "setting") var setting: String
 )
 
-class DataGenerator {
-    companion object {
-        fun insertSettings(): List<SettingsEntity> = listOf(
-            SettingsEntity(name = "Theme", setting = "Auto"),
-            SettingsEntity(name = "Hide", setting = "Off"),
-
-            )
-    }
-}
+//class DataGenerator {
+//    companion object {
+//        fun insertSettings(): List<SettingsEntity> = listOf(
+//            SettingsEntity(name = "Theme", setting = "Auto"),
+//            SettingsEntity(name = "Hide", setting = "Off"),
+//
+//            )
+//    }
+//}
