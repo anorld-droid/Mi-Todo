@@ -17,7 +17,8 @@ data class TodoEntity(
     @ColumnInfo(name = "time") var time: String? = null,
     @ColumnInfo(name = "repeat") var repeat: String,
     @ColumnInfo(name = "hide") var hide: Boolean,
-    @ColumnInfo(name = "delete") var delete: Boolean
+    @ColumnInfo(name = "delete") var delete: Boolean,
+    @ColumnInfo(name = "completed") var completed: Boolean
 )
 
 data class TodoMinimal(
@@ -28,5 +29,7 @@ data class TodoMinimal(
     @ColumnInfo(name = "time") var time: String,
     @ColumnInfo(name = "repeat") var repeat: String,
     @ColumnInfo(name = "hide") var hide: Boolean,
-    @ColumnInfo(name = "delete") var delete: Boolean
+    @ColumnInfo(name = "delete") var delete: Boolean,
+    @ColumnInfo(name = "completed") var completed: Boolean
+
 )
