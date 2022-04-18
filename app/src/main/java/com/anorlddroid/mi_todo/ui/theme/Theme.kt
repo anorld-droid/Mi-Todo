@@ -9,28 +9,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 
 private val DarkColorPalette = darkColors(
     primary = brand,
     primaryVariant = primaryLightColor,
     secondary = primaryTextColor,
-    background = Color.Black.copy(alpha = 0.85F),
+    background = primaryDarkColor,
     surface = primaryColor,
     onPrimary = primaryLightColor,
-    onSecondary = primaryColor
+    onSecondary = primaryColor,
+    onBackground = onBackgroundDark,
+    onSurface = darkDialog
 
 )
 private val LightColorPalette = lightColors(
     primary = brand,
     primaryVariant = primaryColor,
     secondary = primaryDarkColor,
-    background = Color.White.copy(alpha = 0.85F),
+    background = backgroundWhite,
     surface = primaryTextColor.copy(alpha = 0.75F),
     onPrimary = primaryTextColor,
     onSecondary = lightTextFieldColor,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
+    onBackground = WhiteSmoke,
+    onSurface = whiteDialog,
 
     )
 
