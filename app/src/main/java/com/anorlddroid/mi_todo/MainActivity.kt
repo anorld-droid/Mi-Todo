@@ -9,31 +9,53 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import androidx.work.Constraints
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.anorlddroid.mi_todo.data.database.CategoriesInitialData
-import com.anorlddroid.mi_todo.data.database.DataGenerator
 import com.anorlddroid.mi_todo.data.database.MiTodoDatabase
 import com.anorlddroid.mi_todo.ui.CHANNEL_ID
+import com.anorlddroid.mi_todo.ui.utils.DataStoreManager
+import com.anorlddroid.mi_todo.ui.utils.MiTodoWorker
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 const val DATABASE_CREATED: String = "Database created"
+
 class MainActivity : ComponentActivity() {
-    @ExperimentalAnimationApi
-    @ExperimentalMaterialApi
+    lateinit var dataStoreManager: DataStoreManager
+
+    @OptIn(
+        ExperimentalAnimationApi::class,
+        androidx.compose.material.ExperimentalMaterialApi::class
+    )
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         val context = this
         createNotificationChannel()
+        dataStoreManager = DataStoreManager(this)
+        lifecycleScope.launch {
+            PreferenceManager.getDefaultSharedPreferences(context).apply {
+                if (!getBoolean(DATABASE_CREATED, false)) {
+                    dataStoreManager.saveThemeToDataStore(
+                        option = "Auto"
+                    )
+                    dataStoreManager.saveHideToDataStore(
+                        hide = "Off"
+                    )
+                }
+            }
+        }
         lifecycleScope.launch {
             val dbInstance = MiTodoDatabase.getDatabase(context)
             PreferenceManager.getDefaultSharedPreferences(context).apply {
                 if (!getBoolean(DATABASE_CREATED, false)) {
-                    dbInstance.settingsDao().insert(
-                        DataGenerator.insertSettings()[0],
-                        DataGenerator.insertSettings()[1]
+                    dataStoreManager.saveSnoozeToDataStore(
+                        snooze = 5
                     )
                     dbInstance.categoriesDao().insert(
                         CategoriesInitialData.data()[0]
@@ -44,15 +66,25 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        super.onCreate(savedInstanceState)
+        val requestConstraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(false)
+            .setRequiresDeviceIdle(false)
+            .setRequiresCharging(false)
+            .setRequiresStorageNotLow(false)
+            .build()
+        val workRequest = PeriodicWorkRequestBuilder<MiTodoWorker>(21, TimeUnit.HOURS)
+            .setConstraints(requestConstraints)
+            .build()
+        WorkManager.getInstance(context).enqueue(workRequest)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             MiTodoApp()
         }
     }
-    private fun createNotificationChannel(){
+
+    private fun createNotificationChannel() {
         //notification channel on API 26+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = getString(R.string.channel_name)
             val descriptionText = getString(R.string.channel_description)
             val importance = NotificationManager.IMPORTANCE_HIGH
@@ -60,7 +92,8 @@ class MainActivity : ComponentActivity() {
                 description = descriptionText
             }
             //register the channel with the system
-            val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
