@@ -1,4 +1,5 @@
-package com.anorlddroid.mi_todo
+package com.anorlddroid.mi_todo.ui
+
 
 import android.app.Application
 import android.content.Context
@@ -8,33 +9,41 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.anorlddroid.mi_todo.data.database.*
 import com.anorlddroid.mi_todo.data.repository.Repository
-import kotlinx.coroutines.flow.*
+import com.anorlddroid.mi_todo.ui.utils.DataStoreManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 
 class MiTodoViewModel(application: Application) : AndroidViewModel(application) {
     // Holds our currently selected category
+    var dataStoreManager: DataStoreManager = DataStoreManager(application)
     private val _selectedCategory = MutableStateFlow("All")
     private var repository: Repository
     private val _categories = MutableStateFlow<List<String>>(emptyList())
-
     private val _todosHashMap =
         MutableStateFlow<MutableMap<String, MutableList<TodoMinimal>>>(mutableMapOf())
-
-    // Holds our view state which the UI collects via [state]
-//    private val _state = MutableStateFlow(HomeViewState())
-
-    private val refreshing = MutableStateFlow(false)
 
     private val _themeState = MutableStateFlow("")
     val themeState: StateFlow<String>
         get() = _themeState
 
+    private val _snoozeTime = MutableStateFlow(5)
+    val snoozeTime: StateFlow<Int>
+        get() = _snoozeTime
+
     private val _hideState = MutableStateFlow("")
     val hideState: StateFlow<String>
         get() = _hideState
+
+    val todaysTaskList: MutableList<TodoMinimal>?
+        get() = _todosHashMap.value["Today"]
 
     val selectedCategory: StateFlow<String>
         get() = _selectedCategory
@@ -47,37 +56,69 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
 
 
     init {
-        val db = MiTodoDatabase.getDatabase(application)
-        repository = Repository(db)
         viewModelScope.launch {
-            _themeState.value = repository.getSetting("Theme")
-            _hideState.value = repository.getSetting("Hide")
-            //get all categories
-            repository.getAllCategories().buffer().collect {
-                _categories.value = it
-                Log.d("VIEWMODEL", " Categories from repo :${it}")
+            dataStoreManager.getThemeFromDataStore.collect {
+                it?.let { theme ->
+                    _themeState.value = theme
+                }
             }
         }
         viewModelScope.launch {
+            dataStoreManager.getHideFromDataStore.collect {
+                it?.let { hide ->
+                    _hideState.value = hide
+                }
+            }
+        }
+        viewModelScope.launch {
+            dataStoreManager.getSnoozeFromDataStore.collect {
+                it?.let { time ->
+                    _snoozeTime.value = time
+                }
+            }
+        }
+        val db = MiTodoDatabase.getDatabase(application)
+        repository = Repository(db)
+        viewModelScope.launch {
+            //get all categories
+            repository.getAllCategories().buffer().collect {
+                _categories.value = it
+            }
+        }
+        viewModelScope.launch(Dispatchers.IO) {
             formatTodos(todolist = repository.getAllTodos())
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            SetAlarms(application)
         }
     }
 
 
     fun onFilterSelected(category: String) {
-        Log.d("ONFILTERSELECTED", category)
         _selectedCategory.value = category
+        viewModelScope.launch {
+            val todoList = if (category == "Meals") repository.getAllMeals()
+            else if (category == "All") repository.getAllTodos()
+            else repository.getAllTodosByCategory(
+                category
+            )
+            formatTodos(todolist = todoList)
+        }
     }
 
     fun updateSetting(name: String, setting: String) {
         viewModelScope.launch {
             if (name == "Theme") {
                 _themeState.value = setting
+                dataStoreManager.saveThemeToDataStore(
+                    option = setting
+                )
             } else {
                 _hideState.value = setting
+                dataStoreManager.saveHideToDataStore(
+                    hide = setting
+                )
             }
-            val settings = SettingsEntity(name = name, setting = setting)
-            repository.insertSetting(settings)
         }
     }
 
@@ -89,9 +130,15 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         repeat: String,
         hide: Boolean,
         delete: Boolean,
-        context: Context
+        context: Context,
+        completed: Boolean = false,
+        type: MealType? = null,
+        deleteTodo: TodoMinimal?
     ) {
-        viewModelScope.launch {
+        if (deleteTodo != null) {
+            deleteTodo(deleteTodo.id)
+        }
+        viewModelScope.launch(Dispatchers.IO) {
             val todoEntity = TodoEntity(
                 category = categoryName,
                 name = todo,
@@ -99,31 +146,64 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                 time = time,
                 repeat = repeat,
                 hide = hide,
-                delete = delete
+                delete = delete,
+                completed = completed,
+                type = type
             )
             repository.insertTodo(todoEntity)
-            Toast.makeText(context, "Added task", Toast.LENGTH_SHORT).show()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Task added", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
+
     fun insertCategory(entity: String, context: Context) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val categoryEntity = CategoryEntity(name = entity)
             categoryEntity.name = entity
             repository.insertCategory(categoryEntity)
-            Toast.makeText(context, "Added category", Toast.LENGTH_SHORT).show()
-
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Added category", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
-    fun deleteTodo(todo: String) {
+
+    fun deleteTodo(id: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteTodo(id)
+        }
+    }
+
+    fun completedTodo(completed: Boolean, id: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.completedTodo(completed, id)
+        }
+    }
+
+    fun snoozeTodo(todoMinimal: TodoMinimal) {
         viewModelScope.launch {
-            repository.deleteTodo(todo)
+            dataStoreManager.getSnoozeFromDataStore.collect {
+                it?.let { snoozeTime ->
+                    repository.snoozeTodo(todoMinimal, snoozeTime.toLong())
+                }
+            }
+        }
+    }
+
+    fun updateSnoozeTime(time: Int) {
+        _snoozeTime.value = time
+        viewModelScope.launch {
+            dataStoreManager.saveSnoozeToDataStore(
+                snooze = time
+            )
         }
     }
 
     private suspend fun formatTodos(todolist: Flow<List<TodoMinimal>>) {
         todolist.collect {
+            Log.d("VIIIDWEWMODEDLE", "FOOR $it")
             if (it.isNotEmpty()) {
                 _todosHashMap.value = mutableMapOf(
                     "Today" to mutableListOf(),
@@ -134,10 +214,9 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                     "Thursday" to mutableListOf(),
                     "Friday" to mutableListOf(),
                     "Saturday" to mutableListOf(),
-                    "Today" to mutableListOf()
+                    "Sunday" to mutableListOf()
                 )
                 it.forEach { todoMinimal ->
-                    Log.d("REPO", " Collecting  :${todoMinimal}")
                     sanitizeTasks(
                         date = DateTimeTypeConverters.toLocalDate(todoMinimal.date),
                         time = DateTimeTypeConverters.toLocalTime(todoMinimal.time),
@@ -328,38 +407,59 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
-    fun sanitizeTasks(date: LocalDate, time: LocalTime, delete: Boolean, todo: String, id: Int, repeat: String){
-        if (date < LocalDate.now() && delete && repeat == "Never"){
+
+    fun sanitizeTasks(
+        date: LocalDate,
+        time: LocalTime,
+        delete: Boolean,
+        todo: String,
+        id: Int,
+        repeat: String
+    ) {
+        if (date < LocalDate.now() && delete && repeat == "Never") {
             viewModelScope.launch {
-                repository.deleteTodo(todo)
+                repository.deleteTodo(id)
             }
-        }else if (date == LocalDate.now() && time < LocalTime.now() && delete && repeat == "Never"){
+        } else if (date == LocalDate.now() && time < LocalTime.now() && delete && repeat == "Never") {
             viewModelScope.launch {
-                repository.deleteTodo(todo)
+                repository.deleteTodo(id)
             }
-        }else if (date < LocalDate.now() &&  repeat == "Daily"){
+        } else if (date < LocalDate.now() && repeat == "Daily") {
             viewModelScope.launch {
                 val ndate = date.plusDays(1)
-                val updated = repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
-                Log.d("VIEWMODELUPDATE", updated.toString() )
+                repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
             }
-        }else if (date < LocalDate.now() &&  repeat == "Weekly"){
+        } else if (date < LocalDate.now() && repeat == "Weekly") {
             viewModelScope.launch {
                 val ndate = date.plusWeeks(1)
-                val updated = repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
-                Log.d("VIEWMODELUPDATE", updated.toString() )
+                repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
             }
-        }else if (date < LocalDate.now() &&  repeat == "Monthly"){
+        } else if (date < LocalDate.now() && repeat == "Monthly") {
             viewModelScope.launch {
                 val ndate = date.plusMonths(1)
-                val updated = repository.updateTodo( DateTimeTypeConverters.fromLocalDate(ndate), id)
-                Log.d("VIEWMODELUPDATE", updated.toString() )
+                repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
             }
-        }else if (date < LocalDate.now() &&  repeat == "Yearly"){
+        } else if (date < LocalDate.now() && repeat == "Yearly") {
             viewModelScope.launch {
                 val ndate = date.plusYears(1)
-                val updated = repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
-                Log.d("VIEWMODELUPDATE", updated.toString() )
+                repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+            }
+        }
+    }
+
+    suspend fun SetAlarms(context: Context) {
+        todos.collect { todosMap ->
+            todosMap.forEach { (title, todosList) ->
+                todosList.forEach { todo ->
+                    setAlarm(
+                        date = DateTimeTypeConverters.toLocalDate(todo.date),
+                        time = DateTimeTypeConverters.toLocalTime(todo.time),
+                        context = context,
+                        category = todo.category,
+                        todo = todo.name,
+                        notificationID = todo.id
+                    )
+                }
             }
         }
     }
