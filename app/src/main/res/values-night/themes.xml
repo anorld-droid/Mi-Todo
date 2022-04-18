@@ -1,10 +1,10 @@
 <resources>
     <!-- Base application theme. -->
     <style name="Theme.MiTodo" parent="Theme.Material.DayNight.NoActionBar">
-        <item name="android:colorPrimary">#ff00ff</item>
-        <item name="android:colorAccent">#ff00ff</item>
-        <item name="android:statusBarColor">#FF0E3057</item>
-        <item name="android:navigationBarColor">#FF0E3057</item>
+        <item name="android:colorPrimary">#FF0F0F0F</item>
+        <item name="android:colorAccent">#FF0F0F0F</item>
+        <item name="android:statusBarColor">#FF0F0F0F</item>
+        <item name="android:navigationBarColor">#FF0F0F0F</item>
     </style>
 
     <style name="Theme.Material.DayNight.NoActionBar" parent="@android:style/Theme.Material.Light.NoActionBar" />
