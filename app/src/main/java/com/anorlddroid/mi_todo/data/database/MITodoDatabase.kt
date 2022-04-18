@@ -13,7 +13,6 @@ import androidx.room.RoomDatabase
     entities = [
         CategoryEntity::class,
         TodoEntity::class,
-        SettingsEntity::class,
     ],
     version = 1,
     exportSchema = false
@@ -21,7 +20,6 @@ import androidx.room.RoomDatabase
 abstract class MiTodoDatabase : RoomDatabase() {
     abstract fun categoriesDao(): CategoriesDao
     abstract fun TodosDao(): TodosDao
-    abstract fun settingsDao(): SettingsDao
 
     companion object {
         @Volatile
