@@ -9,43 +9,45 @@ import androidx.compose.ui.unit.sp
 import com.anorlddroid.mi_todo.R
 
 
+val Gothic = FontFamily(
+    Font(R.font.gothic_a1_regular, FontWeight.Normal),
+    Font(R.font.gothic_a1_medium, FontWeight.Medium),
+    Font(R.font.gothic_a1_bold, FontWeight.Bold),
 
-val NotoSerifDisplay = FontFamily(
-    Font(R.font.notoserifdisplay_light, FontWeight.Light),
-    Font(R.font.notoserifdisplay_extracondensed_regular, FontWeight.Normal),
-    Font(R.font.notoserifdisplay_bolditalic, FontWeight.Bold),
     )
-val Merienda = FontFamily(
-    Font(R.font.merienda_regular, FontWeight.Normal),
-    )
+
+val NotoSerif = FontFamily(
+    Font(R.font.noto_serif_display_medium_italic, FontWeight.Medium)
+)
 val Typography = Typography(
     h3 = TextStyle(
-        fontFamily = NotoSerifDisplay,
+        fontFamily = Gothic,
         fontSize = 48.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 59.sp
     ),
 
     h5 = TextStyle(
+        fontFamily = Gothic,
         fontSize = 26.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 24.sp
     ),
     h6 = TextStyle(
-        fontFamily = Merienda,
+        fontFamily = Gothic,
         fontSize = 20.sp,
         fontWeight = FontWeight.Normal,
         lineHeight = 24.sp
     ),
     subtitle1 = TextStyle(
-        fontFamily = NotoSerifDisplay,
+        fontFamily = Gothic,
         fontSize = 16.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp
     ),
     subtitle2 = TextStyle(
-        fontFamily = NotoSerifDisplay,
+        fontFamily = Gothic,
         fontSize = 14.sp,
         fontWeight = FontWeight.Light,
         lineHeight = 24.sp,
@@ -57,7 +59,7 @@ val Typography = Typography(
         fontSize = 16.sp
     ) ,
     button = TextStyle(
-        fontFamily = NotoSerifDisplay,
+        fontFamily = Gothic,
         fontSize = 14.sp,
         fontWeight = FontWeight.Light,
         lineHeight = 16.sp,
