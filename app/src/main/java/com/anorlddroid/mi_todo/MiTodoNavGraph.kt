@@ -10,7 +10,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.anorlddroid.mi_todo.ui.AddTodoItem
 import com.anorlddroid.mi_todo.ui.Home
 import kotlinx.coroutines.CoroutineScope
 
@@ -27,11 +26,8 @@ fun MiTodoNavGraph(
         navController = navController,
         startDestination = "ui/Home"
     ){
-        composable("ui/AddTodoItem") {
-            AddTodoItem (upPress = {navController.navigateUp()}, navController = navController)
-        }
         composable("ui/Home") {
-            Home(navController = navController, coroutineScope, scaffoldState)
+            Home(coroutineScope, scaffoldState)
         }
 
     }
