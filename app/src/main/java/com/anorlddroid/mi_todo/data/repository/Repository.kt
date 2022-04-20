@@ -1,5 +1,7 @@
 package com.anorlddroid.mi_todo.data.repository
 
+import android.content.Context
+import android.widget.Toast
 import com.anorlddroid.mi_todo.data.database.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -15,18 +17,17 @@ class Repository(private val dbInstance: MiTodoDatabase) {
     suspend fun completedTodo(completed: Boolean, id: Int) =
         dbInstance.TodosDao().completedTodo(completed, id)
 
-    suspend fun snoozeTodo(todoMinimal: TodoMinimal, snooze: Long) =
-        withContext(Dispatchers.Default) {
-            val time = DateTimeTypeConverters.toLocalTime(todoMinimal.time)
-            time.plusMinutes(snooze)
-            val newTime = DateTimeTypeConverters.fromLocalTime(time)
-            dbInstance.TodosDao().snoozeTodo(time = newTime, id = todoMinimal.id)
-        }
-
-    suspend fun update(todoMinimal: TodoMinimal) =
+    suspend fun snoozeTodo(todoMinimal: TodoMinimal, snooze: Long, context: Context) {
+        val time = DateTimeTypeConverters.toLocalTime(todoMinimal.time)
+        val newTime = DateTimeTypeConverters.fromLocalTime(time.plusMinutes(snooze))
         withContext(Dispatchers.IO) {
-            dbInstance.TodosDao().update(TodoConverter.toEntity(todoMinimal))
+            dbInstance.TodosDao().snoozeTodo(time = newTime, id = todoMinimal.id)
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Task snoozed for $snooze minutes", Toast.LENGTH_SHORT)
+                    .show()
+            }
         }
+    }
 
     suspend fun getAllMeals() = withContext(Dispatchers.IO) {
         dbInstance.TodosDao().getAllMeals().distinctUntilChanged()
