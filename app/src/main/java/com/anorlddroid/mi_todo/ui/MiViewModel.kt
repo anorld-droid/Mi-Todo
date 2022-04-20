@@ -30,6 +30,10 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
     private val _todosHashMap =
         MutableStateFlow<MutableMap<String, MutableList<TodoMinimal>>>(mutableMapOf())
 
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: MutableStateFlow<Boolean>
+        get() = _refreshing
+
     private val _themeState = MutableStateFlow("")
     val themeState: StateFlow<String>
         get() = _themeState
@@ -91,6 +95,17 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.IO) {
             SetAlarms(application)
         }
+        if (_refreshing.value) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val todoList = if (_selectedCategory.value == "Meals") repository.getAllMeals()
+                else if (_selectedCategory.value == "All") repository.getAllTodos()
+                else repository.getAllTodosByCategory(
+                    _selectedCategory.value
+                )
+                formatTodos(todolist = todoList)
+            }
+        }
+
     }
 
 
@@ -104,6 +119,8 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
             )
             formatTodos(todolist = todoList)
         }
+        _refreshing.value = true
+
     }
 
     fun updateSetting(name: String, setting: String) {
@@ -138,21 +155,22 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         if (deleteTodo != null) {
             deleteTodo(deleteTodo.id)
         }
+        val todoEntity = TodoEntity(
+            category = categoryName,
+            name = todo,
+            date = date,
+            time = time,
+            repeat = repeat,
+            hide = hide,
+            delete = delete,
+            completed = completed,
+            type = type
+        )
         viewModelScope.launch(Dispatchers.IO) {
-            val todoEntity = TodoEntity(
-                category = categoryName,
-                name = todo,
-                date = date,
-                time = time,
-                repeat = repeat,
-                hide = hide,
-                delete = delete,
-                completed = completed,
-                type = type
-            )
             repository.insertTodo(todoEntity)
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Task added", Toast.LENGTH_SHORT).show()
+                _refreshing.value = true
             }
         }
     }
@@ -173,6 +191,7 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
     fun deleteTodo(id: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteTodo(id)
+            _refreshing.value = true
         }
     }
 
@@ -182,13 +201,9 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun snoozeTodo(todoMinimal: TodoMinimal) {
+    fun snoozeTodo(todoMinimal: TodoMinimal, context: Context) {
         viewModelScope.launch {
-            dataStoreManager.getSnoozeFromDataStore.collect {
-                it?.let { snoozeTime ->
-                    repository.snoozeTodo(todoMinimal, snoozeTime.toLong())
-                }
-            }
+            repository.snoozeTodo(todoMinimal, snoozeTime.value.toLong(), context)
         }
     }
 
@@ -406,6 +421,7 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
         }
+        _refreshing.value = false
     }
 
     fun sanitizeTasks(
