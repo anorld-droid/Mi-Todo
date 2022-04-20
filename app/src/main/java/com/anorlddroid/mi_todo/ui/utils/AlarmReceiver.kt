@@ -26,7 +26,7 @@ class AlarmReceiver : BroadcastReceiver() {
                             notificationBuilder(
                                 context = p0,
                                 todo = todo,
-                                title = "You have an upcoming ${category.lowercase()} task @$time",
+                                title = "You have an upcoming ${category.lowercase()} task @$time hrs",
                                 notificationid = p1.getIntExtra("NotificationID", 2)
                             )
                         }
@@ -55,7 +55,8 @@ fun notificationBuilder(context: Context, todo: String, title: String, notificat
     val alarmSound: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
     val pendingIntent: PendingIntent = PendingIntent.getActivity(context, 0, intent, 0)
     val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setColor(context.resources.getColor(R.color.black))
+        .setColor(0X000000)
+        .setColorized(true)
         .setSmallIcon(R.drawable.mi_todo_icon)
         .setContentTitle(title)
         .setContentText(todo).setSound(alarmSound)
