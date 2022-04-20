@@ -242,7 +242,9 @@ fun DropdownNavBar(
     viewModel: MiTodoViewModel,
     selectedTime: Int
 ) {
-    val selected = remember { mutableStateOf(selectedTime) }
+    val (_, onOptionSelected) = remember {
+        mutableStateOf(selectedTime)
+    }
     MaterialTheme(
         shapes = MaterialTheme.shapes.copy(
             medium = RoundedCornerShape(
@@ -270,17 +272,18 @@ fun DropdownNavBar(
                             .padding(horizontal = 4.dp)
                             .fillMaxWidth()
                             .selectable(
-                                selected = (min == selected.value),
+                                selected = (min == selectedTime),
                                 onClick = {
-                                    selected.value = min
+                                    onOptionSelected(min)
+                                    viewModel.updateSnoozeTime(min)
                                 }
                             ),
                     ) {
                         RadioButton(
-                            selected = (min == selected.value),
+                            selected = (min == selectedTime),
                             onClick = {
-                                selected.value = min
-
+                                onOptionSelected(min)
+                                viewModel.updateSnoozeTime(min)
                             },
                             colors = RadioButtonDefaults.colors(
                                 selectedColor = MaterialTheme.colors.primary,
@@ -363,38 +366,15 @@ fun HomeContent(
                                 )
                             )
                             if (selectedCategory == "Meals") {
-                                taskList?.value = todosList.groupBy {
-                                    it.type
-                                }
-                                Log.d("VIIIDWEWMODEDLE", "d${taskList?.value}")
-                                taskList?.value?.forEach { (mealType, meal) ->
-                                    mealType?.let {
-                                        Text(
-                                            text = it.name,
-                                            style = TextStyle(
-                                                fontFamily = Gothic,
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.Medium,
-                                                lineHeight = 24.sp
-                                            ),
-                                            modifier = Modifier.padding(
-                                                top = 2.dp,
-                                                bottom = 1.dp,
-                                                start = 6.dp,
-                                                end = 3.dp
-                                            )
-                                        )
-                                    }
-                                    TasksItem(
-                                        todosList = meal,
-                                        selectedCategory = selectedCategory,
-                                        hide = hide,
-                                        coroutineScope = coroutineScope,
-                                        context = context,
-                                        scaffoldState = scaffoldState,
-                                        viewModel = viewModel
-                                    )
-                                }
+                                formatMeal(
+                                    todoList = todosList,
+                                    selectedCategory = selectedCategory,
+                                    hide = hide,
+                                    coroutineScope = coroutineScope,
+                                    context = context,
+                                    scaffoldState = scaffoldState,
+                                    viewModel = viewModel
+                                )
                             } else {
                                 TasksItem(
                                     todosList = todosList,
@@ -437,6 +417,54 @@ fun HomeContent(
         }
     }
 }
+
+@Composable
+fun formatMeal(
+    todoList: List<TodoMinimal>,
+    selectedCategory: String,
+    hide: String,
+    coroutineScope: CoroutineScope,
+    context: Context,
+    scaffoldState: ScaffoldState,
+    viewModel: MiTodoViewModel
+) {
+    val taskList = todoList.groupBy {
+        it.type
+    }
+    taskList.forEach { (mealType, meal) ->
+        mealType?.let {
+            Text(
+                text = MealTypeConvertor(it),
+                style = TextStyle(
+                    fontFamily = Gothic,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 24.sp
+                ),
+                modifier = Modifier.padding(
+                    top = 2.dp,
+                    bottom = 1.dp,
+                    start = 8.dp,
+                    end = 3.dp
+                )
+            )
+        }
+        TasksItem(
+            todosList = meal,
+            selectedCategory = selectedCategory,
+            hide = hide,
+            coroutineScope = coroutineScope,
+            context = context,
+            scaffoldState = scaffoldState,
+            viewModel = viewModel
+        )
+    }
+}
+
+fun MealTypeConvertor(
+    mealType: MealType
+) =
+    if (mealType.name == MealType.BREAKFAST.name) "Breakfast" else if (mealType.name == MealType.LUNCH.name) "Lunch" else "Super"
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -487,7 +515,8 @@ fun TasksItem(
                                             )
                                         },
                                         index = index,
-                                        viewModel = viewModel
+                                        viewModel = viewModel,
+                                        context = context
                                     )
                                 }
                             }
@@ -505,7 +534,8 @@ fun TasksItem(
                                         )
                                     },
                                     index = index,
-                                    viewModel = viewModel
+                                    viewModel = viewModel,
+                                    context = context
                                 )
                             }
                         }
@@ -524,7 +554,8 @@ fun TasksItem(
                                         )
                                     },
                                     index = index,
-                                    viewModel = viewModel
+                                    viewModel = viewModel,
+                                    context = context
                                 )
                             }
                         } else {
@@ -540,7 +571,8 @@ fun TasksItem(
                                     )
                                 },
                                 index = index,
-                                viewModel = viewModel
+                                viewModel = viewModel,
+                                context = context
                             )
                         }
                     }
@@ -559,7 +591,8 @@ fun TodoCard(
     todo: TodoMinimal,
     onDeleted: () -> Unit,
     index: Int,
-    viewModel: MiTodoViewModel
+    viewModel: MiTodoViewModel,
+    context: Context
 ) {
     val showMore = remember { mutableStateOf(false) }
     val circleColor =
@@ -664,7 +697,7 @@ fun TodoCard(
                             .width(1.dp)
                             .padding(vertical = 4.dp)
                     )
-                    TextButton(onClick = { viewModel.snoozeTodo(todo) }) {
+                    TextButton(onClick = { viewModel.snoozeTodo(todo, context = context) }) {
                         Text(text = "Snooze", color = textButtonColor)
                     }
                     MiTodoDivider(
