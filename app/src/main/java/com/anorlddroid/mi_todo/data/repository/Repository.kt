@@ -29,9 +29,7 @@ class Repository(private val dbInstance: MiTodoDatabase) {
         }
     }
 
-    suspend fun getAllMeals() = withContext(Dispatchers.IO) {
-        dbInstance.TodosDao().getAllMeals().distinctUntilChanged()
-    }
+    fun getAllMeals() = dbInstance.TodosDao().getAllMeals().distinctUntilChanged()
 
     fun getAllTodosByCategory(category: String) =
         dbInstance.TodosDao().getAllTodoByCategory(category).distinctUntilChanged()
