@@ -632,10 +632,10 @@ fun AddTodoItemDialog(
                                             }
                                             DropdownMenuItem(onClick = {
                                                 showCategory = false
-                                                category = MealType.SUPER.name
+                                                category = MealType.SUPPER.name
                                             }) {
                                                 Text(
-                                                    text = MealType.SUPER.name,
+                                                    text = MealType.SUPPER.name,
                                                     style = MaterialTheme.typography.h6,
                                                     color = MaterialTheme.colors.secondary
                                                 )
@@ -799,5 +799,5 @@ fun todoValidation(
 fun toMealType(type: String): MealType {
     return if (type == MealType.BREAKFAST.name) MealType.BREAKFAST
     else if (type == MealType.LUNCH.name) MealType.LUNCH
-    else MealType.SUPER
+    else MealType.SUPPER
 }
