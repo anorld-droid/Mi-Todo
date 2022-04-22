@@ -11,6 +11,7 @@ import com.anorlddroid.mi_todo.data.database.*
 import com.anorlddroid.mi_todo.data.repository.Repository
 import com.anorlddroid.mi_todo.ui.utils.DataStoreManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,32 +96,20 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.IO) {
             SetAlarms(application)
         }
-        if (_refreshing.value) {
-            viewModelScope.launch(Dispatchers.IO) {
-                val todoList = if (_selectedCategory.value == "Meals") repository.getAllMeals()
-                else if (_selectedCategory.value == "All") repository.getAllTodos()
-                else repository.getAllTodosByCategory(
-                    _selectedCategory.value
-                )
-                formatTodos(todolist = todoList)
-            }
-        }
-
     }
 
 
     fun onFilterSelected(category: String) {
         _selectedCategory.value = category
+        val todoList = if (category == "Meals") repository.getAllMeals()
+        else if (category == "All") repository.getAllTodos()
+        else repository.getAllTodosByCategory(
+            category
+        )
         viewModelScope.launch {
-            val todoList = if (category == "Meals") repository.getAllMeals()
-            else if (category == "All") repository.getAllTodos()
-            else repository.getAllTodosByCategory(
-                category
-            )
             formatTodos(todolist = todoList)
         }
-        _refreshing.value = true
-
+        refresh()
     }
 
     fun updateSetting(name: String, setting: String) {
@@ -170,7 +159,7 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
             repository.insertTodo(todoEntity)
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Task added", Toast.LENGTH_SHORT).show()
-                _refreshing.value = true
+                refresh()
             }
         }
     }
@@ -191,7 +180,7 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
     fun deleteTodo(id: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteTodo(id)
-            _refreshing.value = true
+            refresh()
         }
     }
 
@@ -204,6 +193,22 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
     fun snoozeTodo(todoMinimal: TodoMinimal, context: Context) {
         viewModelScope.launch {
             repository.snoozeTodo(todoMinimal, snoozeTime.value.toLong(), context)
+        }
+    }
+
+    fun refresh() {
+        _refreshing.value = true
+        val todoList = if (_selectedCategory.value == "Meals") repository.getAllMeals()
+        else if (_selectedCategory.value == "All") repository.getAllTodos()
+        else repository.getAllTodosByCategory(
+            _selectedCategory.value
+        )
+        viewModelScope.launch {
+            formatTodos(todolist = todoList)
+        }
+        viewModelScope.launch {
+            delay(2000)
+            _refreshing.value = false
         }
     }
 
@@ -421,7 +426,6 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
         }
-        _refreshing.value = false
     }
 
     fun sanitizeTasks(
