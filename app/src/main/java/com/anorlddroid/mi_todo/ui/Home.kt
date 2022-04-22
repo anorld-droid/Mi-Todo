@@ -46,26 +46,70 @@ import com.anorlddroid.mi_todo.data.database.TodoMinimal
 import com.anorlddroid.mi_todo.ui.components.*
 import com.anorlddroid.mi_todo.ui.theme.*
 import com.anorlddroid.mi_todo.ui.utils.AlarmReceiver
+import com.anorlddroid.mi_todo.ui.utils.makePhoneCall
+import com.anorlddroid.mi_todo.ui.utils.openTwitter
+import com.anorlddroid.mi_todo.ui.utils.openWhatsApp
 import com.google.accompanist.insets.statusBarsPadding
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.*
 
 const val CHANNEL_ID = "channel 1"
 
+@OptIn(ExperimentalAnimationApi::class, androidx.compose.material.ExperimentalMaterialApi::class)
+@Composable
+fun HomeScreen(
+    coroutineScope: CoroutineScope,
+    scaffoldState: ScaffoldState,
+) {
+    val viewModel: MiTodoViewModel = viewModel()
+    val isRefreshing by viewModel.refreshing.collectAsState()
+    var refresh = rememberSwipeRefreshState(isRefreshing)
+    Box(modifier = Modifier.fillMaxSize()) {
+        SwipeRefresh(
+            state = refresh,
+            onRefresh = {
+                viewModel.refresh()
+            },
+            indicator = { state, trigger ->
+                SwipeRefreshIndicator(
+                    state = state,
+                    refreshTriggerDistance = trigger,
+                    scale = true,
+                    backgroundColor = MaterialTheme.colors.secondary,
+                    contentColor = MaterialTheme.colors.background,
+                    arrowEnabled = true,
+                    modifier = Modifier.padding(top = 80.dp),
+                    elevation = 4.dp
+                )
+
+            }
+        ) {
+            refresh = rememberSwipeRefreshState(isRefreshing = true)
+            Home(coroutineScope, scaffoldState, viewModel)
+            refresh =
+                rememberSwipeRefreshState(isRefreshing = false)
+        }
+    }
+}
+
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi
 @Composable
 fun Home(
     coroutineScope: CoroutineScope,
-    scaffoldState: ScaffoldState
+    scaffoldState: ScaffoldState,
+    viewModel: MiTodoViewModel
 ) {
-    val viewModel: MiTodoViewModel = viewModel()
     val hideState = viewModel.hideState.collectAsState().value
     val selectedTime by viewModel.snoozeTime.collectAsState()
     val bottomSheetState =
         rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val addTask = remember { mutableStateOf(false) }
+    val context = LocalContext.current
     ModalBottomSheetLayout(
         sheetState = bottomSheetState,
         sheetShape = RoundedCornerShape(22.dp),
@@ -125,6 +169,64 @@ fun Home(
                     viewModel = viewModel
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Request a feature/Report a bug",
+                    style = TextStyle(
+                        fontFamily = Gothic,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        lineHeight = 24.sp
+                    ),
+                    modifier = Modifier.padding(
+                        top = 8.dp,
+                        bottom = 8.dp,
+                        start = 10.dp,
+                        end = 3.dp
+                    ),
+                    softWrap = true,
+                    overflow = TextOverflow.Visible,
+                    color = MaterialTheme.colors.secondary
+                )
+                MiTodoDivider()
+                Text(
+                    text = "Twitter",
+                    style = MaterialTheme.typography.h6.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = NotoSerif
+                    ),
+                    color = MaterialTheme.colors.secondary,
+                    modifier = Modifier
+                        .padding(start = 24.dp, bottom = 10.dp, top = 8.dp)
+                        .clickable {
+                            openTwitter(context)
+                        }
+                )
+                Text(
+                    text = "WhatsApp",
+                    style = MaterialTheme.typography.h6.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = NotoSerif
+                    ),
+                    color = MaterialTheme.colors.secondary,
+                    modifier = Modifier
+                        .padding(start = 24.dp, bottom = 10.dp)
+                        .clickable {
+                            openWhatsApp(context)
+                        }
+                )
+                Text(
+                    text = "Make a phone call",
+                    style = MaterialTheme.typography.h6.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = NotoSerif
+                    ),
+                    color = MaterialTheme.colors.secondary,
+                    modifier = Modifier
+                        .padding(start = 24.dp, bottom = 15.dp)
+                        .clickable {
+                            makePhoneCall(context)
+                        }
+                )
             }
         }
     ) {
@@ -456,7 +558,7 @@ fun formatMeal(
             coroutineScope = coroutineScope,
             context = context,
             scaffoldState = scaffoldState,
-            viewModel = viewModel
+            viewModel = viewModel,
         )
     }
 }
@@ -464,7 +566,7 @@ fun formatMeal(
 fun MealTypeConvertor(
     mealType: MealType
 ) =
-    if (mealType.name == MealType.BREAKFAST.name) "Breakfast" else if (mealType.name == MealType.LUNCH.name) "Lunch" else "Super"
+    if (mealType.name == MealType.BREAKFAST.name) "Breakfast" else if (mealType.name == MealType.LUNCH.name) "Lunch" else "Supper"
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -475,7 +577,7 @@ fun TasksItem(
     coroutineScope: CoroutineScope,
     context: Context,
     scaffoldState: ScaffoldState,
-    viewModel: MiTodoViewModel
+    viewModel: MiTodoViewModel,
 ) {
     MiTodoSurface(
         shape = CutCornerShape(4.dp),
