@@ -6,7 +6,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 enum class MealType {
-    BREAKFAST, LUNCH, SUPER
+    BREAKFAST, LUNCH, SUPPER
 }
 
 @Entity(
