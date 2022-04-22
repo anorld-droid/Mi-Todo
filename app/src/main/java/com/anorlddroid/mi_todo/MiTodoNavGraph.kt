@@ -10,7 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.anorlddroid.mi_todo.ui.Home
+import com.anorlddroid.mi_todo.ui.HomeScreen
 import kotlinx.coroutines.CoroutineScope
 
 @ExperimentalAnimationApi
@@ -27,7 +27,7 @@ fun MiTodoNavGraph(
         startDestination = "ui/Home"
     ){
         composable("ui/Home") {
-            Home(coroutineScope, scaffoldState)
+            HomeScreen(coroutineScope, scaffoldState)
         }
 
     }
