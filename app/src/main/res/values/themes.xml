@@ -1,10 +1,22 @@
 <resources>
     <!-- Base application theme. -->
     <style name="Theme.MiTodo" parent="Theme.Material.DayNight.NoActionBar">
-        <item name="android:colorPrimary">#C4FFFFFF</item>
-        <item name="android:colorAccent">#C4FFFFFF</item>
-        <item name="android:statusBarColor">#C4FFFFFF</item>
-        <item name="android:navigationBarColor">#C4FFFFFF</item>
+        <item name="android:colorPrimary">#FFFFFFFF</item>
+        <item name="android:colorAccent">#FFFFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFFFF</item>
+        <item name="android:navigationBarColor">#FFFFFFFF</item>
     </style>
+
     <style name="Theme.Material.DayNight.NoActionBar" parent="@android:style/Theme.Material.Light.NoActionBar" />
+
+    <style name="CustomWeekDate" parent="android:TextAppearance.DeviceDefault.Small">
+        <item name="android:textColor">@color/black</item>
+    </style>
+
+    <style name="CalenderViewCustom" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
+        <item name="android:textColorPrimary">@color/black</item>
+        <item name="colorAccent">@color/brand</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSurface">@color/grey_light</item>
+    </style>
 </resources>

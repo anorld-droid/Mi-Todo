@@ -3,7 +3,6 @@ package com.anorlddroid.mi_todo.ui
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -223,7 +222,6 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
 
     private suspend fun formatTodos(todolist: Flow<List<TodoMinimal>>) {
         todolist.collect {
-            Log.d("VIIIDWEWMODEDLE", "FOOR $it")
             if (it.isNotEmpty()) {
                 _todosHashMap.value = mutableMapOf(
                     "Today" to mutableListOf(),
@@ -448,21 +446,26 @@ class MiTodoViewModel(application: Application) : AndroidViewModel(application) 
             viewModelScope.launch {
                 val ndate = date.plusDays(1)
                 repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+                repository.completedTodo(false, id)
             }
         } else if (date < LocalDate.now() && repeat == "Weekly") {
             viewModelScope.launch {
                 val ndate = date.plusWeeks(1)
                 repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+                repository.completedTodo(false, id)
+
             }
         } else if (date < LocalDate.now() && repeat == "Monthly") {
             viewModelScope.launch {
                 val ndate = date.plusMonths(1)
                 repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+                repository.completedTodo(false, id)
             }
         } else if (date < LocalDate.now() && repeat == "Yearly") {
             viewModelScope.launch {
                 val ndate = date.plusYears(1)
                 repository.updateTodo(DateTimeTypeConverters.fromLocalDate(ndate), id)
+                repository.completedTodo(false, id)
             }
         }
     }

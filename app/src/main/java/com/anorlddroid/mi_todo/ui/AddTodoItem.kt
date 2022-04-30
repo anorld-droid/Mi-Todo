@@ -31,9 +31,8 @@ import com.anorlddroid.mi_todo.data.database.TodoMinimal
 import com.anorlddroid.mi_todo.ui.components.MiTodoSurface
 import com.anorlddroid.mi_todo.ui.theme.Gothic
 import com.anorlddroid.mi_todo.ui.theme.brand
+import com.anorlddroid.mi_todo.ui.utils.DatePicker
 import com.vanpra.composematerialdialogs.MaterialDialog
-import com.vanpra.composematerialdialogs.datetime.date.DatePickerDefaults
-import com.vanpra.composematerialdialogs.datetime.date.datepicker
 import com.vanpra.composematerialdialogs.datetime.time.TimePickerDefaults
 import com.vanpra.composematerialdialogs.datetime.time.timepicker
 import com.vanpra.composematerialdialogs.rememberMaterialDialogState
@@ -156,7 +155,7 @@ fun AddTodoItemDialog(
     }
     if (nextDialog) {
         //time and date variable states
-        val dateDialog = rememberMaterialDialogState()
+        var showDateDialog by remember { mutableStateOf(false) }
         val timeDialog = rememberMaterialDialogState()
         Dialog(onDismissRequest = { }) {
             MiTodoSurface(modifier = Modifier.fillMaxWidth(), elevation = 4.dp) {
@@ -176,7 +175,7 @@ fun AddTodoItemDialog(
                     TextField(
                         value = DateTimeTypeConverters.fromLocalDate(selectedDate.value),
                         onValueChange = {
-                            dateDialog.show()
+                            showDateDialog = !showDateDialog
                         },
                         maxLines = 2,
                         modifier = Modifier
@@ -199,33 +198,19 @@ fun AddTodoItemDialog(
                                 modifier = Modifier
                                     .padding(start = 4.dp, end = 8.dp)
                                     .clickable {
-                                        dateDialog.show()
+                                        showDateDialog = !showDateDialog
                                     }
                             )
                         },
                         shape = RoundedCornerShape(16.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
                     )
-                    MaterialDialog(
-                        dialogState = dateDialog,
-                        backgroundColor = MaterialTheme.colors.background,
-                        shape = MaterialTheme.shapes.medium,
-                        buttons = {
-                            positiveButton("Ok")
-                            negativeButton("Cancel")
-                        }
-                    ) {
-                        datepicker(
-                            initialDate = selectedDate.value,
-                            colors = DatePickerDefaults.colors(
-                                headerBackgroundColor = brand,
-                                headerTextColor = MaterialTheme.colors.secondary,
-                                calendarHeaderTextColor = MaterialTheme.colors.secondary,
-                                dateInactiveTextColor = MaterialTheme.colors.secondary,
-                                dateInactiveBackgroundColor = MaterialTheme.colors.onBackground,
-                            ),
-                        ) { date ->
-                            selectedDate.value = date
+                    if (showDateDialog) {
+                        DatePicker(
+                            onDateSelected = { date ->
+                                selectedDate.value = date
+                            }) {
+                            showDateDialog = !showDateDialog
                         }
                     }
                     TextField(
@@ -273,6 +258,7 @@ fun AddTodoItemDialog(
                         timepicker(
                             initialTime = selectedTime.value,
                             colors = TimePickerDefaults.colors(
+                                headerTextColor = MaterialTheme.colors.secondary,
                                 activeBackgroundColor = brand,
                                 inactiveTextColor = MaterialTheme.colors.secondary,
                                 inactiveBackgroundColor = MaterialTheme.colors.onBackground,
@@ -343,7 +329,7 @@ fun AddTodoItemDialog(
             if (todoMinimal == null) remember { mutableStateOf(false) } else remember {
                 mutableStateOf(todoMinimal.delete)
             }
-        Dialog(onDismissRequest = { /*TODO*/ }) {
+        Dialog(onDismissRequest = { }) {
             MiTodoSurface(modifier = Modifier.fillMaxWidth(), elevation = 4.dp) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
@@ -417,9 +403,7 @@ fun AddTodoItemDialog(
                                             .background(
                                                 color = MaterialTheme.colors.onPrimary
                                             )
-                                            .width(maxWidth)
-                                            .padding(start = 16.dp, end = 8.dp)
-                                            .height(220.dp),
+                                            .width(maxWidth),
                                         expanded = showRepeat,
                                         onDismissRequest = { showRepeat = false },
 
@@ -505,9 +489,7 @@ fun AddTodoItemDialog(
                                             .background(
                                                 color = MaterialTheme.colors.onPrimary
                                             )
-                                            .width(maxWidth)
-                                            .padding(start = 16.dp, end = 8.dp)
-                                            .height(120.dp),
+                                            .width(maxWidth),
                                         expanded = showFilterTypes,
                                         onDismissRequest = { showFilterTypes = false },
 
@@ -604,8 +586,7 @@ fun AddTodoItemDialog(
                                             .background(
                                                 color = MaterialTheme.colors.onPrimary
                                             )
-                                            .width(maxWidth)
-                                            .height(120.dp),
+                                            .width(maxWidth),
                                         expanded = showCategory,
                                         onDismissRequest = { showCategory = false },
                                     ) {

@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -145,7 +144,6 @@ fun Home(
                     viewModel = viewModel
                 )
                 ThemeState.selectedTheme = viewModel.themeState.collectAsState().value
-                Log.d("HOME", viewModel.themeState.collectAsState().value)
                 Text(
                     text = "Hide",
                     style = TextStyle(
@@ -287,7 +285,7 @@ fun HomeBar(
                 modifier = modifier,
                 backgroundColor = MaterialTheme.colors.background,
                 contentColor = MaterialTheme.colors.secondary,
-                elevation = 0.dp, // No shadow needed
+                elevation = 0.dp,
                 actions = {
                     IconButton(onClick = {
                         coroutineScope.launch { bottomSheetState.show() }

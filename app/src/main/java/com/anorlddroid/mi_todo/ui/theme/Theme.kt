@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val DarkColorPalette = darkColors(
     primary = brand,
@@ -40,15 +41,20 @@ object ThemeState {
 }
 @Composable
 fun MiTodoTheme(content: @Composable() () -> Unit) {
+    val systemUiController = rememberSystemUiController()
     Log.d("THEME", " Theme state value :${ThemeState.selectedTheme}")
     val colors = if (ThemeState.selectedTheme == "On") {
+        systemUiController.setSystemBarsColor(color = primaryDarkColor)
         DarkColorPalette
     } else if (ThemeState.selectedTheme == "Off") {
+        systemUiController.setSystemBarsColor(color = backgroundWhite)
         LightColorPalette
     } else {
         if (isSystemInDarkTheme()) {
+            systemUiController.setSystemBarsColor(color = primaryDarkColor)
             DarkColorPalette
         } else {
+            systemUiController.setSystemBarsColor(color = backgroundWhite)
             LightColorPalette
         }
     }
